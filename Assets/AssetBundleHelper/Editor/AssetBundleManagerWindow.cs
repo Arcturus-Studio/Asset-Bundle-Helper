@@ -22,13 +22,13 @@ public class AssetBundleManagerWindow : EditorWindow {
 		DirectoryInfo di = new DirectoryInfo(Application.dataPath);
 		FileInfo[] files = di.GetFiles("*.asset", SearchOption.AllDirectories);
 		detectedBundlesFileInfos = files.Where((x) => {
-			string s = x.DirectoryName + "/"+ x.Name;
-			UnityEngine.Object o = AssetDatabase.LoadAssetAtPath(s.Substring(s.IndexOf("Assets/")), typeof(AssetBundleListing)) as AssetBundleListing;
+			string s = x.DirectoryName + Path.DirectorySeparatorChar+ x.Name;
+            UnityEngine.Object o = AssetDatabase.LoadAssetAtPath(s.Substring(s.IndexOf("Assets" + Path.DirectorySeparatorChar)), typeof(AssetBundleListing)) as AssetBundleListing;
 			return o != null;
 		}).ToList();
 		detectedBundles = detectedBundlesFileInfos.ConvertAll<AssetBundleListing>((x) => {
-			string s = x.DirectoryName + "/"+ x.Name;
-			return AssetDatabase.LoadAssetAtPath(s.Substring(s.IndexOf("Assets/")), typeof(AssetBundleListing)) as AssetBundleListing;
+            string s = x.DirectoryName + Path.DirectorySeparatorChar + x.Name;
+			return AssetDatabase.LoadAssetAtPath(s.Substring(s.IndexOf("Assets"+Path.DirectorySeparatorChar)), typeof(AssetBundleListing)) as AssetBundleListing;
 		}).ToList();
 		
 	}
