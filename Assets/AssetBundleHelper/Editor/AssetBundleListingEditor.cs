@@ -164,14 +164,13 @@ public class AssetBundleListingEditor : Editor {
 			if(!di.Exists)
 				di.Create();
 			BuildAssetBundleOptions babOpts = BuildAssetBundleOptions.CompleteAssets;
-			BuildOptions bOpts = BuildOptions.None;
 			if(listing.gatherDependencies)
 				babOpts |= BuildAssetBundleOptions.CollectDependencies;
 			if(!listing.compressed)
-				bOpts = BuildOptions.UncompressedAssetBundle;
+				babOpts |= BuildAssetBundleOptions.UncompressedAssetBundle;
 			var files = listing.GetListingForPlatform(plat.name);
 			var names = listing.assets.ConvertAll<string>((x) => x.name).ToList();
-			BuildPipeline.BuildAssetBundleExplicitAssetNames(files.ToArray(),names.ToArray(), path, babOpts, plat.unityBuildTarget, bOpts);
+			BuildPipeline.BuildAssetBundleExplicitAssetNames(files.ToArray(),names.ToArray(), path, babOpts, plat.unityBuildTarget);
 		}
 	}
 	
