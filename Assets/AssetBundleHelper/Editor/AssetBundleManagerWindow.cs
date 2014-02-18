@@ -38,7 +38,7 @@ public class AssetBundleManagerWindow : EditorWindow {
 			Refresh();
 			return;
 		}
-		EditorGUIUtility.LookLikeInspector();
+		EditorGUIUtility.LookLikeControls();
 		GUILayout.BeginHorizontal();
 		GUILayout.Label("Bundles", EditorStyles.boldLabel);
 		GUILayout.FlexibleSpace();

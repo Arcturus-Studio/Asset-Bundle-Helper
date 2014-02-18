@@ -54,7 +54,7 @@ public class AssetBundleListingEditor : Editor {
 		so = ScriptableObject.CreateInstance<AssetBundleHelperSettings>();
 		so.platforms = new BundlePlatform[1];
 		so.platforms[0] = new BundlePlatform();
-		so.platforms[0].name = "Default";
+		so.platforms[0].name = AssetBundleRuntimeSettings.DefaultPlatform;
 		so.platforms[0].unityBuildTarget = BuildTarget.WebPlayer;
 		DirectoryInfo di = new DirectoryInfo(Application.dataPath+"/AssetBundleHelper");
 		if(!di.Exists){
@@ -72,7 +72,8 @@ public class AssetBundleListingEditor : Editor {
 		EditorGUIUtility.LookLikeControls();
 		GUILayout.Label("Bundle Contents",EditorStyles.boldLabel);
 		GUILayout.BeginVertical(GUI.skin.box);
-		GUILayout.BeginHorizontal(EditorStyles.toolbar);
+		//Header
+		GUILayout.BeginHorizontal(EditorStyles.toolbar);		
 		GUILayout.Label("Name", GUILayout.MinWidth(100));
 		GUILayout.FlexibleSpace();
 		foreach(var plat in Settings.platforms){
@@ -80,17 +81,24 @@ public class AssetBundleListingEditor : Editor {
 		}
 		GUILayout.Space(16);
 		GUILayout.EndHorizontal();
+		
+		//Asset listing
 		foreach(var entry in listing.assets){
 			GUILayout.BeginHorizontal();
 			GUILayout.Space(2);
-			entry.name = GUILayout.TextField(entry.name, GUILayout.MinWidth(100));
+			string name = GUILayout.TextField(entry.name, GUILayout.MinWidth(100));
+			if(entry.name != name){
+				entry.name = name;
+				EditorUtility.SetDirty(target);
+				listing.UpdateManifest();
+			}			
 			GUILayout.FlexibleSpace();
 			foreach(var plat in Settings.platforms){
 				Object o = null;
 				Object d = null;
 				bool usingDefault = false;
 
-				d = entry.GetAssetForPlatform("Default");
+				d = entry.GetAssetForPlatform(AssetBundleRuntimeSettings.DefaultPlatform);
 				o = entry.GetAssetForPlatform(plat.name);
 
 				if(o == null && d != null){
@@ -111,8 +119,7 @@ public class AssetBundleListingEditor : Editor {
 					}
 					Object n = EditorGUILayout.ObjectField(o,typeof(Object), false, GUILayout.Width(60));
 					GUI.backgroundColor = Color.white;
-					if(n != o){
-						
+					if(n != o){						
 						entry.Add(n, plat.name);
 						EditorUtility.SetDirty(target);
 					}
@@ -124,6 +131,7 @@ public class AssetBundleListingEditor : Editor {
 			GUILayout.Space(2);
 			GUILayout.EndHorizontal();
 		}
+		//New entry
 		GUILayout.BeginHorizontal();
 		GUILayout.FlexibleSpace();
 		if(GUILayout.Button("",Settings.addButtonStyle)){
@@ -131,11 +139,15 @@ public class AssetBundleListingEditor : Editor {
 		}
 		GUILayout.EndHorizontal();
 		GUILayout.EndVertical();
+		//Handle removed entries
 		if(toRemove.Count > 0){
 			listing.assets.RemoveAll((x) => toRemove.Contains(x));
 			toRemove.Clear();
 			EditorUtility.SetDirty(target);
+			listing.UpdateManifest();
 		}
+		
+		//Settings
 		GUILayout.Label("Bundle Build Options",EditorStyles.boldLabel);
 		listing.gatherDependencies =  EditorGUILayout.Toggle("Gather Dependencies", listing.gatherDependencies);
 		listing.compressed =  EditorGUILayout.Toggle("Compressed", listing.compressed);
@@ -173,5 +185,4 @@ public class AssetBundleListingEditor : Editor {
 			BuildPipeline.BuildAssetBundleExplicitAssetNames(files.ToArray(),names.ToArray(), path, babOpts, plat.unityBuildTarget);
 		}
 	}
-	
 }

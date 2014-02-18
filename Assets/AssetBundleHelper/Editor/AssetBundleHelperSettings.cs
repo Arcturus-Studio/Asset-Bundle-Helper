@@ -7,7 +7,9 @@ using System.Collections;
 using System.Collections.Generic;
 
 public class AssetBundleHelperSettings : ScriptableObject {
+	public bool hotload; //For development purposes, bypass need to update assetbundles constantly
 	public BundlePlatform[] platforms;
+	public string defaultPlatform = "Default";
 	public string bundleDirectoryRelativeToProjectFolder;
 	public GUIStyle headerStyle;
 	public GUIStyle deleteButtonStyle;
