@@ -81,7 +81,7 @@ public class AssetBundleManagerWindow : EditorWindow {
 				DateTime lastBundleWriteTime = AssetBundleListingEditor.Settings.GetLastWriteTime(listing, plat.name);
 				bool exists = lastBundleWriteTime != badDate;
 				isOutofdate[plat.name] = listingFile.LastWriteTimeUtc > lastBundleWriteTime;
-				var platObjs = listing.GetListingForPlatform(plat.name);
+				var platObjs = listing.GetAssetsForPlatform(plat.name);
 				
 				string[] strings = platObjs.ConvertAll<string>((x) => { 
 					return AssetDatabase.GetAssetPath(x);

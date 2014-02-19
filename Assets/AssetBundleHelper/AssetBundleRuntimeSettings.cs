@@ -20,18 +20,18 @@ public class AssetBundleRuntimeSettings : ScriptableSingleton<AssetBundleRuntime
 	[SerializeField]
 	protected string defaultPlatform = "Default";
 	
-	public static bool Hotload{
+	public static bool FastPath{
 		get{
-			return Instance.hotload;
+			return Instance.fastPath;
 		}
 #if UNITY_EDITOR
 		set{
-			Instance.hotload = value;
+			Instance.fastPath = value;
 			EditorUtility.SetDirty(Instance);
 		}
 #endif
 	}
 	[SerializeField]
-	protected bool hotload = false;
+	protected bool fastPath = false;
 
 }

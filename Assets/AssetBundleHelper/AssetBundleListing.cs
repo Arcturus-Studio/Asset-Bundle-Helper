@@ -9,83 +9,53 @@ using System.Collections.Generic;
 
 public class AssetBundleListing : ScriptableObject {
 	public bool gatherDependencies = true;
-	public bool compressed = true;
-	public List<AssetBundleEntry> assets;
-	public AssetBundleManifest manifest;
-	
-	public List<Object> GetListingForPlatform(string platform){
-		return assets.ConvertAll<Object>((x) => {
-
-			var result = x.GetAssetForPlatform(platform);
-			if(!result){
-				return x.GetAssetForPlatform(AssetBundleRuntimeSettings.DefaultPlatform);
-			}
-			else {return result;}
-		}).ToList();
-	}
+	public bool compressed = true;	
+	public List<PlatformContentsPair> assets = new List<PlatformContentsPair>();
 
 #if UNITY_EDITOR
-	public void UpdateManifest(){
-		if(!manifest){
-			manifest = ScriptableObject.CreateInstance<AssetBundleManifest>();						
-			var path = AssetDatabase.GetAssetPath(this);
-			string dir = Path.GetDirectoryName(path);
-			string filename = Path.GetFileNameWithoutExtension(path) + " Manifest.asset";
-			path = AssetDatabase.GenerateUniqueAssetPath(Path.Combine(dir, filename));
-			AssetDatabase.CreateAsset(manifest, path);
-			AssetDatabase.SaveAssets();
+	public List<Object> GetAssetsForPlatform(string platform){
+		return assets.FirstOrDefault(x => x.platform == platform).Load().GetAssets();
+	}
+	public List<string> GetNamesForPlatform(string platform){
+		return assets.FirstOrDefault(x => x.platform == platform).Load().GetNames();
+	}
+	public AssetBundleContents GetBundleForPlatform(string platform){
+		var pair = assets.FirstOrDefault(x => x.platform == platform);
+		if(pair == null){
+			pair = new PlatformContentsPair();
+			pair.platform = platform;
+			assets.Add(pair);
 		}
-		
-		manifest.assetBundleListingName = name;
-		if(AssetBundleRuntimeSettings.Hotload){
-			manifest.sourceListing = this;
-		}
-		else {
-			manifest.sourceListing = null;
-		}
-		manifest.assets.Clear();
-		foreach(var entry in assets){
-			manifest.assets.Add(new AssetBundleManifestEntry(entry));
-		}
-		EditorUtility.SetDirty(manifest);
+		return pair.LoadOrCreate(this);
 	}
 #endif
 }
 
 [System.Serializable]
-public class AssetBundleEntry{
-	public string name = "";
-	public void Add(Object obj, string platform){
-		if(name == ""){
-			name = obj.name;
-		}
-		PlatformAssetPair pa = platformToAsset.FirstOrDefault(
-			(x) => {
-				return x.platform == platform;
-			});
-		if(pa == null){
-			pa = new PlatformAssetPair();
-			platformToAsset.Add(pa);
-		}
-		pa.platform = platform;
-		pa.asset = obj;
+public class PlatformContentsPair{
+	public string platform;
+	public string contentsPath; //Maintain weak reference
+
+#if UNITY_EDITOR	
+	public AssetBundleContents Load(){
+		return AssetDatabase.LoadMainAssetAtPath(contentsPath) as AssetBundleContents;
 	}
 	
-	public Object GetAssetForPlatform(string platform){
-		if(platformToAsset == null){
-			platformToAsset = new List<PlatformAssetPair>();
+	public AssetBundleContents LoadOrCreate(AssetBundleListing sourceListing){
+		if(string.IsNullOrEmpty(contentsPath)){
+			string dir = "Assets/AssetBundleHelper/BundleContents/";
+			if(!Directory.Exists(dir)){
+				Directory.CreateDirectory(dir);
+			}
+			contentsPath = AssetDatabase.GenerateUniqueAssetPath(Path.Combine(dir, sourceListing.name + "_" + platform + ".asset"));
+			AssetBundleContents	contents = ScriptableObject.CreateInstance<AssetBundleContents>();
+			contents.listing = sourceListing;
+			contents.platform = platform;
+			AssetDatabase.CreateAsset(contents, contentsPath);
+			EditorUtility.SetDirty(sourceListing);
+			AssetDatabase.SaveAssets();
 		}
-		var pap = platformToAsset.FirstOrDefault(
-			(x) => {
-				return x.platform == platform;
-			});
-		return pap == null ? null : pap.asset;
+		return Load();
 	}
-	public List<PlatformAssetPair> platformToAsset = new List<PlatformAssetPair>();
-}
-
-[System.Serializable]
-public class PlatformAssetPair{
-	public string platform;
-	public Object asset;
+#endif
 }

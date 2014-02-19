@@ -65,7 +65,31 @@ public class AssetBundleListingEditor : Editor {
 		return so;
 	}
 	
-	List<AssetBundleEntry> toRemove = new List<AssetBundleEntry>();
+	List<ListingEditorEntry> assets;	
+	List<ListingEditorEntry> toRemove = new List<ListingEditorEntry>();
+	
+	public void OnEnable(){
+		//Construct more readily editable asset mapping
+		assets = new List<ListingEditorEntry>();
+		var assetsByName = new Dictionary<string, ListingEditorEntry>();
+		AssetBundleListing listing = target as AssetBundleListing;
+		
+		foreach(var pair in listing.assets){
+			AssetBundleContents contents = pair.Load();
+			if(contents != null){
+				foreach(var entry in contents.assets){
+					if(!assetsByName.ContainsKey(entry.name)){
+						var newEntry = new ListingEditorEntry();
+						newEntry.name = entry.name;						
+						assetsByName[entry.name] = newEntry;
+						assets.Add(newEntry);
+					}
+					assetsByName[entry.name].assets[contents.platform] = entry.isInherited ? null : entry.asset;
+				}
+			}
+		}
+	}
+	
 	public override void OnInspectorGUI() {
 		serializedObject.Update();
 		AssetBundleListing listing = target as AssetBundleListing;
@@ -83,14 +107,13 @@ public class AssetBundleListingEditor : Editor {
 		GUILayout.EndHorizontal();
 		
 		//Asset listing
-		foreach(var entry in listing.assets){
+		foreach(var entry in assets){
 			GUILayout.BeginHorizontal();
 			GUILayout.Space(2);
 			string name = GUILayout.TextField(entry.name, GUILayout.MinWidth(100));
 			if(entry.name != name){
 				entry.name = name;
-				EditorUtility.SetDirty(target);
-				listing.UpdateManifest();
+				UpdateBundleContents();
 			}			
 			GUILayout.FlexibleSpace();
 			foreach(var plat in Settings.platforms){
@@ -110,7 +133,7 @@ public class AssetBundleListingEditor : Editor {
 					GUI.backgroundColor = Color.white;
 					if(n != d){
 						entry.Add(n, plat.name);
-						EditorUtility.SetDirty(target);
+						UpdateBundleContents();
 					}
 				}
 				else{
@@ -121,7 +144,7 @@ public class AssetBundleListingEditor : Editor {
 					GUI.backgroundColor = Color.white;
 					if(n != o){						
 						entry.Add(n, plat.name);
-						EditorUtility.SetDirty(target);
+						UpdateBundleContents();
 					}
 				}
 			}
@@ -135,16 +158,16 @@ public class AssetBundleListingEditor : Editor {
 		GUILayout.BeginHorizontal();
 		GUILayout.FlexibleSpace();
 		if(GUILayout.Button("",Settings.addButtonStyle)){
-			listing.assets.Add(new AssetBundleEntry());
+			assets.Add(new ListingEditorEntry());
+			UpdateBundleContents();
 		}
 		GUILayout.EndHorizontal();
 		GUILayout.EndVertical();
 		//Handle removed entries
 		if(toRemove.Count > 0){
-			listing.assets.RemoveAll((x) => toRemove.Contains(x));
+			assets.RemoveAll((x) => toRemove.Contains(x));
 			toRemove.Clear();
-			EditorUtility.SetDirty(target);
-			listing.UpdateManifest();
+			UpdateBundleContents();
 		}
 		
 		//Settings
@@ -167,6 +190,22 @@ public class AssetBundleListingEditor : Editor {
 		}
 	}
 	
+	protected void UpdateBundleContents(){
+		var listing = target as AssetBundleListing;
+		foreach(var plat in Settings.platforms){
+			AssetBundleContents bundle = listing.GetBundleForPlatform(plat.name);
+			bundle.assets.Clear();
+			foreach(ListingEditorEntry entry in assets){
+				BundleContentsEntry bundleEntry = new BundleContentsEntry();
+				bundleEntry.name = entry.name;
+				bundleEntry.asset = entry.GetAssetForPlatformOrInherited(plat.name, out bundleEntry.isInherited);
+				bundle.assets.Add(bundleEntry);
+			}
+			EditorUtility.SetDirty(bundle);
+		}
+		EditorUtility.SetDirty(listing);
+	}
+	
 	public static void BuildBundleForCurrentPlatforms(AssetBundleListing listing){
 		var curPlats = Settings.GetPlatformsForCurrentBuildTarget(EditorUserBuildSettings.activeBuildTarget);
 		foreach(BundlePlatform plat in curPlats){
@@ -180,9 +219,37 @@ public class AssetBundleListingEditor : Editor {
 				babOpts |= BuildAssetBundleOptions.CollectDependencies;
 			if(!listing.compressed)
 				babOpts |= BuildAssetBundleOptions.UncompressedAssetBundle;
-			var files = listing.GetListingForPlatform(plat.name);
-			var names = listing.assets.ConvertAll<string>((x) => x.name).ToList();
+			var files = listing.GetAssetsForPlatform(plat.name);
+			var names = listing.GetNamesForPlatform(plat.name);
 			BuildPipeline.BuildAssetBundleExplicitAssetNames(files.ToArray(),names.ToArray(), path, babOpts, plat.unityBuildTarget);
 		}
+	}
+}
+
+public class ListingEditorEntry{
+	public string name = "";
+	public Dictionary<string, Object> assets = new Dictionary<string, Object>(); //Platform -> Asset
+	
+	public Object GetAssetForPlatform(string platform){
+		Object obj = null;
+		assets.TryGetValue(platform, out obj);
+		return obj;
+	}
+	
+	public Object GetAssetForPlatformOrInherited(string platform, out bool isInherited){
+		Object obj = null;
+		assets.TryGetValue(platform, out obj);
+		if(obj == null && platform != AssetBundleRuntimeSettings.DefaultPlatform){
+			assets.TryGetValue(AssetBundleRuntimeSettings.DefaultPlatform, out obj);
+			isInherited = true;
+		}
+		else{
+			isInherited = false;
+		}
+		return obj;
+	}
+	
+	public void Add(Object asset, string platform){
+		assets[platform] = asset;
 	}
 }
