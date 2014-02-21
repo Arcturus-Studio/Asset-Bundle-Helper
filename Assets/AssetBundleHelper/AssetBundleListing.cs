@@ -11,7 +11,15 @@ public class AssetBundleListing : ScriptableObject {
 	public bool gatherDependencies = true;
 	public bool compressed = true;	
 	public List<PlatformContentsPair> assets = new List<PlatformContentsPair>();
-
+	
+	public IEnumerator Get(string assetName){
+		return AssetBundleLoader.Get(this, assetName);
+	}
+	
+	public void Release(string assetName){
+		AssetBundleLoader.Release(this, assetName);
+	}
+	
 #if UNITY_EDITOR
 	public List<Object> GetAssetsForPlatform(string platform){
 		return assets.FirstOrDefault(x => x.platform == platform).Load().GetAssets();
