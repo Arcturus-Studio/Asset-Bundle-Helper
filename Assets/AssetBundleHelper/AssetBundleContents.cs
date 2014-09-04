@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -13,6 +14,9 @@ public class AssetBundleContents : ScriptableObject {
 	}
 	public List<string> GetNames(){
 		return assets.ConvertAll<string>( x => x.name);
+	}
+	public Object Get(string name){
+		return assets.FirstOrDefault<BundleContentsEntry>(x => x.name == name).asset;
 	}
 }
 

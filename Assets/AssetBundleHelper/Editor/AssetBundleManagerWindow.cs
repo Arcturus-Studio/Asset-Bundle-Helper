@@ -98,7 +98,7 @@ public class AssetBundleManagerWindow : EditorWindow {
 						continue;
 					}
 					FileInfo objFileInfo = new FileInfo(projectPath);
-					string metaPath = AssetDatabase.GetTextMetaDataPathFromAssetPath(projectPath);
+					string metaPath = AssetDatabase.GetTextMetaFilePathFromAssetPath(projectPath);
 					FileInfo metaFileInfo = new FileInfo(metaPath);
 					if(objFileInfo.LastWriteTimeUtc > lastBundleWriteTime
 						|| (metaPath != "" && metaFileInfo.LastWriteTimeUtc > lastBundleWriteTime)){
