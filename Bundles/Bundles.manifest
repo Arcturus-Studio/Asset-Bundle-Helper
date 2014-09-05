@@ -4,15 +4,17 @@ AssetBunudleManifest:
     Info_0:
       Name: scenes
       Dependencies:
-        Dependency_0: bundlecube
-        Dependency_1: bundlesphere
-        Dependency_2: materiala
+        Dependency_0: material.a
+        Dependency_1: bundlecube
+        Dependency_2: bundlesphere
     Info_1:
-      Name: bundlecube
+      Name: material.a
       Dependencies: {}
     Info_2:
-      Name: bundlesphere
-      Dependencies: {}
+      Name: bundlecube
+      Dependencies:
+        Dependency_0: material.a
     Info_3:
-      Name: materiala
-      Dependencies: {}
+      Name: bundlesphere
+      Dependencies:
+        Dependency_0: material.a

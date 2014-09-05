@@ -8,7 +8,7 @@ public class TestNewPipeline : MonoBehaviour {
 	static void Buildmap() {
 		// Create the array of bundle build details.
 		AssetBundleBuild[] altBuildMap = new AssetBundleBuild[1];
-		altBuildMap[0].assetBundleName = "materialB";
+		altBuildMap[0].assetBundleName = "material.b";
 		altBuildMap[0].assetNames = new string[]{"Assets/Test/MaterialB/Material.mat"};
 		BuildPipeline.BuildAssetBundles("Bundles/", altBuildMap);
 		
@@ -19,7 +19,7 @@ public class TestNewPipeline : MonoBehaviour {
 		baseBuildMap[1].assetNames = new string[]{"Assets/Test/BundleCube/Cube.prefab"};
 		baseBuildMap[2].assetBundleName = "bundleSphere";
 		baseBuildMap[2].assetNames = new string[]{"Assets/Test/BundleSphere/Sphere.prefab"};
-		baseBuildMap[3].assetBundleName = "materialA";
+		baseBuildMap[3].assetBundleName = "material.a";
 		baseBuildMap[3].assetNames = new string[]{"Assets/Test/MaterialA/Material.mat"};		
 		BuildPipeline.BuildAssetBundles("Bundles/", baseBuildMap);
 		

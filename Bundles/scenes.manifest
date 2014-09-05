@@ -1,9 +1,9 @@
 ManifestFileVersion: 0
-CRC: 3204150800
+CRC: 206449697
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 1622e2fee1a687c2de48b7135bc6e81a
+    Hash: ef679472c09ee134e946aafcc725a76c
   TypeTreeHash:
     serializedVersion: 2
     Hash: d68ce1d8f77c9b8ef439e1dbdf0364be
@@ -54,6 +54,6 @@ ClassTypes:
 Assets:
   Asset_0: Assets/Test/TestScene.unity
 Dependencies:
-  Dependency_0: Bundles/bundlecube
-  Dependency_1: Bundles/bundlesphere
-  Dependency_2: Bundles/materiala
+  Dependency_0: Bundles/material.a
+  Dependency_1: Bundles/bundlecube
+  Dependency_2: Bundles/bundlesphere

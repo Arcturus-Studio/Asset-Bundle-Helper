@@ -1,12 +1,12 @@
 ManifestFileVersion: 0
-CRC: 244186850
+CRC: 4136073983
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: af95ed53b46840a0d2d5d17556b31f6f
+    Hash: db691b7d61f3033d15bbc6a48ac1c5a9
   TypeTreeHash:
     serializedVersion: 2
-    Hash: 9e9f808733005dfad6996ba5c939b212
+    Hash: 1718e52009643789d2a8d12986e9b763
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -21,11 +21,9 @@ ClassTypes:
   Script: {instanceID: 0}
 - Class: 43
   Script: {instanceID: 0}
-- Class: 48
-  Script: {instanceID: 0}
 - Class: 135
   Script: {instanceID: 0}
 Assets:
-  Asset_0: Assets/Test/MaterialC/Material.mat
-  Asset_1: Assets/Test/BundleSphere/Sphere.prefab
-Dependencies: {}
+  Asset_0: Assets/Test/BundleSphere/Sphere.prefab
+Dependencies:
+  Dependency_0: Bundles/material.a

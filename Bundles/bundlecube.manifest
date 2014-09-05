@@ -1,12 +1,12 @@
 ManifestFileVersion: 0
-CRC: 1881615332
+CRC: 2941712146
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: c709f27bdff87fa7b911b6f83c0eb6ca
+    Hash: 01113085283cf19b517b8f33bbbfd2bf
   TypeTreeHash:
     serializedVersion: 2
-    Hash: 5da71fc97055cac80b41e67394017811
+    Hash: 273c25a3262a3fff4489903545d6cbd2
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -21,11 +21,9 @@ ClassTypes:
   Script: {instanceID: 0}
 - Class: 43
   Script: {instanceID: 0}
-- Class: 48
-  Script: {instanceID: 0}
 - Class: 65
   Script: {instanceID: 0}
 Assets:
-  Asset_0: Assets/Test/MaterialC/Material.mat
-  Asset_1: Assets/Test/BundleCube/Cube.prefab
-Dependencies: {}
+  Asset_0: Assets/Test/BundleCube/Cube.prefab
+Dependencies:
+  Dependency_0: Bundles/material.a

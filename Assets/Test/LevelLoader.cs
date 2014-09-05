@@ -14,11 +14,11 @@ public class LevelLoader : MonoBehaviour {
 		Coroutine<AssetBundle> matLoad2 = StartCoroutine<AssetBundle>(LoadAssetBundle("bundleSphere"));
 		yield return matLoad2.coroutine;
 		if(loadA){
-			Coroutine<AssetBundle> matLoad3 = StartCoroutine<AssetBundle>(LoadAssetBundle("materialA"));
+			Coroutine<AssetBundle> matLoad3 = StartCoroutine<AssetBundle>(LoadAssetBundle("material.a"));
 			yield return matLoad3.coroutine;
 		}
 		if(loadB){
-			Coroutine<AssetBundle> matLoad4 = StartCoroutine<AssetBundle>(LoadAssetBundle("materialB"));
+			Coroutine<AssetBundle> matLoad4 = StartCoroutine<AssetBundle>(LoadAssetBundle("material.b"));
 			yield return matLoad4.coroutine;
 		}
 		Application.LoadLevel("TestScene");
