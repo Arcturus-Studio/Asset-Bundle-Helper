@@ -1,0 +1,6 @@
+ManifestFileVersion: 0
+AssetBunudleManifest:
+  AssetBundleInfos:
+    Info_0:
+      Name: material.android
+      Dependencies: {}

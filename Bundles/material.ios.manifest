@@ -1,0 +1,18 @@
+ManifestFileVersion: 0
+CRC: 2884420722
+Hashes:
+  AssetFileHash:
+    serializedVersion: 2
+    Hash: a58aee7b85247f28732b454a2fffa20b
+  TypeTreeHash:
+    serializedVersion: 2
+    Hash: 2e13d2857d3d04b223b2c9a4c87e4c27
+HashAppended: 0
+ClassTypes:
+- Class: 21
+  Script: {instanceID: 0}
+- Class: 48
+  Script: {instanceID: 0}
+Assets:
+  Asset_0: Assets/Test/Material iOS/Material.mat
+Dependencies: {}
