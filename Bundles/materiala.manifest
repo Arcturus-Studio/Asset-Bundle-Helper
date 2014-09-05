@@ -1,9 +1,9 @@
 ManifestFileVersion: 0
-CRC: 2030692447
+CRC: 1535570171
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: a58aee7b85247f28732b454a2fffa20b
+    Hash: f6ea8d9931a6c0e1c84a7f00a4c3fb6e
   TypeTreeHash:
     serializedVersion: 2
     Hash: 2e13d2857d3d04b223b2c9a4c87e4c27
@@ -14,5 +14,5 @@ ClassTypes:
 - Class: 48
   Script: {instanceID: 0}
 Assets:
-  Asset_0: Assets/Test/Material iOS/Material.mat
+  Asset_0: Assets/Test/MaterialA/Material.mat
 Dependencies: {}

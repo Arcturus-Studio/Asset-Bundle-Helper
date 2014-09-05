@@ -1,12 +1,12 @@
 ManifestFileVersion: 0
-CRC: 3255470305
+CRC: 3204150800
 Hashes:
   AssetFileHash:
     serializedVersion: 2
-    Hash: 0fbdc22801eeeb6c4b631d02c54909ae
+    Hash: 1622e2fee1a687c2de48b7135bc6e81a
   TypeTreeHash:
     serializedVersion: 2
-    Hash: 4c154f276739b0e5c2ba2c3011e82fc5
+    Hash: d68ce1d8f77c9b8ef439e1dbdf0364be
 HashAppended: 0
 ClassTypes:
 - Class: 1
@@ -37,13 +37,23 @@ ClassTypes:
   Script: {instanceID: 0}
 - Class: 108
   Script: {instanceID: 0}
+- Class: 114
+  Script: {fileID: 11500000, guid: 6842fe607f22540f8b618cb8ee8d8278, type: 3}
+- Class: 115
+  Script: {instanceID: 0}
 - Class: 124
   Script: {instanceID: 0}
 - Class: 127
+  Script: {instanceID: 0}
+- Class: 135
+  Script: {instanceID: 0}
+- Class: 136
   Script: {instanceID: 0}
 - Class: 157
   Script: {instanceID: 0}
 Assets:
   Asset_0: Assets/Test/TestScene.unity
 Dependencies:
-  Dependency_0: Bundles/material.default
+  Dependency_0: Bundles/bundlecube
+  Dependency_1: Bundles/bundlesphere
+  Dependency_2: Bundles/materiala
