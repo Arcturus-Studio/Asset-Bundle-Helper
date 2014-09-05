@@ -18,19 +18,19 @@ public class AssetBundleManagerWindow : EditorWindow {
 	}
 
 	
-	public void Refresh(){
-		DirectoryInfo di = new DirectoryInfo(Application.dataPath);
+	public void Refresh(){		
+		detectedBundlesFileInfos = new List<FileInfo>();
+		detectedBundles = new List<AssetBundleListing>();
+		DirectoryInfo di = new DirectoryInfo(Application.dataPath); //Assets directory
 		FileInfo[] files = di.GetFiles("*.asset", SearchOption.AllDirectories);
-		detectedBundlesFileInfos = files.Where((x) => {
-			string s = x.DirectoryName + Path.DirectorySeparatorChar+ x.Name;
-            UnityEngine.Object o = AssetDatabase.LoadAssetAtPath(s.Substring(s.IndexOf("Assets" + Path.DirectorySeparatorChar)), typeof(AssetBundleListing)) as AssetBundleListing;
-			return o != null;
-		}).ToList();
-		detectedBundles = detectedBundlesFileInfos.ConvertAll<AssetBundleListing>((x) => {
-            string s = x.DirectoryName + Path.DirectorySeparatorChar + x.Name;
-			return AssetDatabase.LoadAssetAtPath(s.Substring(s.IndexOf("Assets"+Path.DirectorySeparatorChar)), typeof(AssetBundleListing)) as AssetBundleListing;
-		}).ToList();
-		
+		foreach(FileInfo fi in files){
+			string projectRelativePath = fi.FullName.Substring(di.Parent.FullName.Length + 1); //+1 includes slash
+			AssetBundleListing abl = AssetDatabase.LoadAssetAtPath(projectRelativePath, typeof(AssetBundleListing)) as AssetBundleListing;
+			if(abl != null){
+				detectedBundlesFileInfos.Add(fi);
+				detectedBundles.Add(abl);
+			}
+		}
 	}
 
 	public void OnGUI(){
