@@ -9,8 +9,9 @@ using System.Collections.Generic;
 
 public class AssetBundleListing : ScriptableObject {
 	public bool gatherDependencies = true;
-	public bool compressed = true;	
-	public List<PlatformContentsPair> assets = new List<PlatformContentsPair>();
+	public bool compressed = true;
+	public int tagMask = 0;	
+	public List<TagPathPair> assets = new List<TagPathPair>();
 	
 	public IEnumerator Get(string assetName){
 		return AssetBundleLoader.Get(this, assetName);
@@ -21,17 +22,17 @@ public class AssetBundleListing : ScriptableObject {
 	}
 	
 #if UNITY_EDITOR
-	public List<Object> GetAssetsForPlatform(string platform){
-		return assets.FirstOrDefault(x => x.platform == platform).Load().GetAssets();
+	public List<Object> GetAssetsForTags(string tags){
+		return assets.FirstOrDefault(x => x.tags == tags).Load().GetAssets();
 	}
-	public List<string> GetNamesForPlatform(string platform){
-		return assets.FirstOrDefault(x => x.platform == platform).Load().GetNames();
+	public List<string> GetNamesForTags(string tags){
+		return assets.FirstOrDefault(x => x.tags == tags).Load().GetNames();
 	}
-	public AssetBundleContents GetBundleForPlatform(string platform){
-		var pair = assets.FirstOrDefault(x => x.platform == platform);
+	public AssetBundleContents GetBundleContentsForTags(string tags){
+		var pair = assets.FirstOrDefault(x => x.tags == tags);
 		if(pair == null){
-			pair = new PlatformContentsPair();
-			pair.platform = platform;
+			pair = new TagPathPair();
+			pair.tags = tags;
 			assets.Add(pair);
 		}
 		return pair.LoadOrCreate(this);
@@ -40,11 +41,12 @@ public class AssetBundleListing : ScriptableObject {
 }
 
 [System.Serializable]
-public class PlatformContentsPair{
-	public string platform;
-	public string contentsPath; //Maintain weak reference
+public class TagPathPair{
+	public string tags; //Period-delimited tag string
+	public string contentsPath; //Path to AssetBundleContents (used as weak reference)
 
-#if UNITY_EDITOR	
+#if UNITY_EDITOR
+
 	public AssetBundleContents Load(){
 		return AssetDatabase.LoadMainAssetAtPath(contentsPath) as AssetBundleContents;
 	}
@@ -55,10 +57,10 @@ public class PlatformContentsPair{
 			if(!Directory.Exists(dir)){
 				Directory.CreateDirectory(dir);
 			}
-			contentsPath = AssetDatabase.GenerateUniqueAssetPath(Path.Combine(dir, sourceListing.name + "_" + platform + ".asset"));
+			contentsPath = AssetDatabase.GenerateUniqueAssetPath(Path.Combine(dir, sourceListing.name + "_" + tags + ".asset"));
 			AssetBundleContents	contents = ScriptableObject.CreateInstance<AssetBundleContents>();
 			contents.listing = sourceListing;
-			contents.platform = platform;
+			contents.tags = tags;
 			AssetDatabase.CreateAsset(contents, contentsPath);
 			EditorUtility.SetDirty(sourceListing);
 			AssetDatabase.SaveAssets();

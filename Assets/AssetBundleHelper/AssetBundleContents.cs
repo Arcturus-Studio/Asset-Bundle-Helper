@@ -5,7 +5,7 @@ using System.Collections.Generic;
 
 //References the assets that will be contained in an asset bundle
 public class AssetBundleContents : ScriptableObject {
-	public string platform = "";
+	public string tags;
 	public AssetBundleListing listing;
 	public List<BundleContentsEntry> assets = new List<BundleContentsEntry>();
 	

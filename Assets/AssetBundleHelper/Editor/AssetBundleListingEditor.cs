@@ -71,20 +71,20 @@ public class AssetBundleListingEditor : Editor {
 	public void OnEnable(){
 		//Construct more readily editable asset mapping
 		assets = new List<ListingEditorEntry>();
-		var assetsByName = new Dictionary<string, ListingEditorEntry>();
+		var assetsByKeyAsset = new Dictionary<Object, ListingEditorEntry>();
 		AssetBundleListing listing = target as AssetBundleListing;
 		
 		foreach(var pair in listing.assets){
 			AssetBundleContents contents = pair.Load();
 			if(contents != null){
 				foreach(var entry in contents.assets){
-					if(!assetsByName.ContainsKey(entry.name)){
+					if(!assetsByKeyAsset.ContainsKey(entry.asset)){
 						var newEntry = new ListingEditorEntry();
-						newEntry.name = entry.name;						
-						assetsByName[entry.name] = newEntry;
+						newEntry.asset = entry.asset;						
+						assetsByKeyAsset[entry.asset] = newEntry;
 						assets.Add(newEntry);
 					}
-					assetsByName[entry.name].assets[contents.platform] = entry.isInherited ? null : entry.asset;
+					assetsByKeyAsset[entry.asset].assets[contents.tags] = entry.isInherited ? null : entry.asset;
 				}
 			}
 		}
@@ -94,28 +94,98 @@ public class AssetBundleListingEditor : Editor {
 		serializedObject.Update();
 		AssetBundleListing listing = target as AssetBundleListing;
 		EditorGUIUtility.LookLikeControls();
+		
+		//TODO: Move this someplace else
+		string[] tagMaskOptions = new string[Settings.tagGroups.Length+1];
+		tagMaskOptions[0] = "Platform";
+		for(int i = 0; i < Settings.tagGroups.Length; i++){
+			tagMaskOptions[i+1] = Settings.tagGroups[i].name;
+		}
+		
+		GUILayout.BeginHorizontal();
 		GUILayout.Label("Bundle Contents",EditorStyles.boldLabel);
+		GUILayout.FlexibleSpace();		
+		int newMask = EditorGUILayout.MaskField("Tags", listing.tagMask, tagMaskOptions);
+		if(newMask != listing.tagMask){
+			listing.tagMask = newMask;
+			UpdateBundleContents();
+		}
+		GUILayout.EndHorizontal();
+		
+		GUILayout.Label("[DBG: Tagstring = " + Settings.MaskToTagString(listing.tagMask) + "]", EditorStyles.miniLabel);
+		List<BundleTagGroup> tagGroups = Settings.MaskToTagGroups(listing.tagMask);
+		
+		IList<BundleTag> horizontalTags;
+		if(tagGroups.Count > 0){
+			horizontalTags = tagGroups[0].tags;
+		}
+		else{
+			horizontalTags = new BundleTag[]{BundleTag.NoTag};
+		}
+		
+		List<List<BundleTag>> verticalTags = new List<List<BundleTag>>();
+		if(tagGroups.Count > 1){
+			verticalTags.AddRange(TagComboBuilder(tagGroups, 1));
+		}
+		else{
+			var noTagList = new List<BundleTag>();
+			noTagList.Add(BundleTag.NoTag);
+			verticalTags.Add(noTagList);
+		}
+		
 		GUILayout.BeginVertical(GUI.skin.box);
 		//Header
-		GUILayout.BeginHorizontal(EditorStyles.toolbar);		
-		GUILayout.Label("Name", GUILayout.MinWidth(100));
-		GUILayout.FlexibleSpace();
-		foreach(var plat in Settings.platforms){
-			GUILayout.Label(new GUIContent(plat.name,plat.icon32),GUILayout.Height(14), GUILayout.Width(60));
+		GUILayout.BeginHorizontal(EditorStyles.toolbar);
+		const int normalColumnWidth = 60;
+		const int wideColumnWidth = 80;
+		GUILayoutOption[] tagLayoutParams = new GUILayoutOption[]{GUILayout.Height(16), GUILayout.Width(normalColumnWidth)};
+		GUILayoutOption[] wideLayoutParams = new GUILayoutOption[]{GUILayout.Height(16), GUILayout.Width(wideColumnWidth)};
+		GUILayout.Label("Asset", wideLayoutParams);	
+		GUILayout.Space(normalColumnWidth);
+		foreach(var tag in horizontalTags){
+			GUILayout.Label(new GUIContent(tag.name, tag.icon32), tagLayoutParams);
 		}
-		GUILayout.Space(16);
+		GUILayout.FlexibleSpace();
 		GUILayout.EndHorizontal();
 		
 		//Asset listing
 		foreach(var entry in assets){
 			GUILayout.BeginHorizontal();
 			GUILayout.Space(2);
+			//Default/Key asset
+			GUILayout.BeginHorizontal();			
+			EditorGUILayout.ObjectField(null, typeof(Object), false, wideLayoutParams);
+			GUILayout.BeginVertical();
+			foreach(List<BundleTag> tags in verticalTags){
+				if(tags.Count == 1){
+					GUILayout.Label(new GUIContent(tags[0].name, tags[0].icon32), tagLayoutParams);
+				}
+				else{
+					GUILayout.Label(BuildTagString(tags), tagLayoutParams);
+				}
+			}
+			GUILayout.EndVertical();
+			for(int i = 0; i < horizontalTags.Count; i++){
+				GUILayout.BeginVertical();
+				for(int j = 0; j < verticalTags.Count; j++){
+					if(i > 0 || j > 0){
+						EditorGUILayout.ObjectField(null, typeof(Object), false, tagLayoutParams);
+					}
+					else{
+						GUILayout.Label("", tagLayoutParams);
+					}
+				}
+				GUILayout.EndVertical();
+			}
+			GUILayout.EndHorizontal();
+			/*
 			string name = GUILayout.TextField(entry.name, GUILayout.MinWidth(100));
 			if(entry.name != name){
 				entry.name = name;
 				UpdateBundleContents();
 			}			
 			GUILayout.FlexibleSpace();
+			actual object fields
 			foreach(var plat in Settings.platforms){
 				Object o = null;
 				Object d = null;
@@ -148,6 +218,8 @@ public class AssetBundleListingEditor : Editor {
 					}
 				}
 			}
+			*/
+			GUILayout.FlexibleSpace();
 			if(GUILayout.Button("",Settings.deleteButtonStyle)){
 				toRemove.Add(entry);
 			}
@@ -192,8 +264,10 @@ public class AssetBundleListingEditor : Editor {
 	
 	protected void UpdateBundleContents(){
 		var listing = target as AssetBundleListing;
+		Debug.LogWarning("Did not update bundle contents, fix this");
+		/*
 		foreach(var plat in Settings.platforms){
-			AssetBundleContents bundle = listing.GetBundleForPlatform(plat.name);
+			AssetBundleContents bundle = listing.GetBundleForTags(plat.name);
 			bundle.assets.Clear();
 			foreach(ListingEditorEntry entry in assets){
 				BundleContentsEntry bundleEntry = new BundleContentsEntry();
@@ -203,10 +277,48 @@ public class AssetBundleListingEditor : Editor {
 			}
 			EditorUtility.SetDirty(bundle);
 		}
+		*/
 		EditorUtility.SetDirty(listing);
 	}
 	
+	//Helper function for building all combinations of tag strings
+	private IEnumerable<List<BundleTag>> TagComboBuilder(List<BundleTagGroup> list, int index){
+		//End condition: reached list end, yield list for each tag
+		if(index == list.Count-1){
+			foreach(BundleTag tag in list[index].tags){
+				var newList = new List<BundleTag>(1);
+				newList.Add(tag);
+				yield return newList;
+			}
+		}
+		//Recurse: Yield each tag followed by all combinations of later tags
+		else{
+			foreach(List<BundleTag> suffix in TagComboBuilder(list, index+1)){
+				foreach(BundleTag tag in list[index].tags){
+					var newList = new List<BundleTag>(suffix.Count + 1);
+					newList.Add(tag);
+					newList.AddRange(suffix);
+					yield return newList;
+				}
+			}
+		}
+	}
+	
+	private string BuildTagString(List<BundleTag> list, int index = 0){
+		if(index == list.Count - 1){
+			return list[index].name;
+		}
+		else if(index < list.Count){
+			return list[index].name + "." + BuildTagString(list, index+1);
+		}
+		else{
+			return "";
+		}
+	}
+	
 	public static void BuildBundleForCurrentPlatforms(AssetBundleListing listing){
+		Debug.LogWarning("TODO: Build bundle for current platforms");
+		/*
 		var curPlats = Settings.GetPlatformsForCurrentBuildTarget(EditorUserBuildSettings.activeBuildTarget);
 		foreach(BundlePlatform plat in curPlats){
 			string path = Settings.bundleDirectoryRelativeToProjectFolder;
@@ -223,24 +335,25 @@ public class AssetBundleListingEditor : Editor {
 			var names = listing.GetNamesForPlatform(plat.name);
 			BuildPipeline.BuildAssetBundleExplicitAssetNames(files.ToArray(),names.ToArray(), path, babOpts, plat.unityBuildTarget);
 		}
+		*/
 	}
 }
 
 public class ListingEditorEntry{
-	public string name = "";
-	public Dictionary<string, Object> assets = new Dictionary<string, Object>(); //Platform -> Asset
+	public Object asset;
+	public Dictionary<string, Object> assets = new Dictionary<string, Object>(); //tag string -> Asset
 	
-	public Object GetAssetForPlatform(string platform){
+	public Object GetAssetForTags(string tagString){
 		Object obj = null;
-		assets.TryGetValue(platform, out obj);
+		assets.TryGetValue(tagString, out obj);
 		return obj;
 	}
 	
-	public Object GetAssetForPlatformOrInherited(string platform, out bool isInherited){
+	public Object GetAssetForTagsOrInherited(string tagString, out bool isInherited){
 		Object obj = null;
-		assets.TryGetValue(platform, out obj);
-		if(obj == null && platform != AssetBundleRuntimeSettings.DefaultPlatform){
-			assets.TryGetValue(AssetBundleRuntimeSettings.DefaultPlatform, out obj);
+		assets.TryGetValue(tagString, out obj);
+		if(obj == null && !string.IsNullOrEmpty(tagString)){
+			assets.TryGetValue("", out obj);
 			isInherited = true;
 		}
 		else{
@@ -249,7 +362,7 @@ public class ListingEditorEntry{
 		return obj;
 	}
 	
-	public void Add(Object asset, string platform){
-		assets[platform] = asset;
+	public void Add(Object asset, string tagString){
+		assets[tagString] = asset;
 	}
 }

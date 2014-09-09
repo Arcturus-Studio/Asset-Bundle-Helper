@@ -18,7 +18,8 @@ public class AssetBundleManagerWindow : EditorWindow {
 	}
 
 	
-	public void Refresh(){		
+	public void Refresh(){
+		//Search for existing AssetBundleListings
 		detectedBundlesFileInfos = new List<FileInfo>();
 		detectedBundles = new List<AssetBundleListing>();
 		DirectoryInfo di = new DirectoryInfo(Application.dataPath); //Assets directory
@@ -58,7 +59,7 @@ public class AssetBundleManagerWindow : EditorWindow {
 		List<AssetBundleListing> listingsOutOfDate = new List<AssetBundleListing>();
 		var curPlats = AssetBundleListingEditor.Settings.GetPlatformsForCurrentBuildTarget(EditorUserBuildSettings.activeBuildTarget);
 		
-		for(int i =0; i < detectedBundles.Count; i++){
+		for(int i = 0; i < detectedBundles.Count; i++){
 			AssetBundleListing listing = detectedBundles[i];
 			if(listing == null){
 				Refresh();
@@ -68,14 +69,16 @@ public class AssetBundleManagerWindow : EditorWindow {
 			if(listingFile == null){
 				Refresh();
 				return;
-			}
-			Dictionary<string, bool> isOutofdate = new Dictionary<string, bool>();
+			}			
 			GUILayout.BeginHorizontal();
 			if(GUILayout.Button(listing.name,EditorStyles.miniButton,GUILayout.MinWidth(100))){
 				Selection.activeObject = listing;
 				EditorGUIUtility.PingObject(Selection.activeObject);
 			}
 			GUILayout.FlexibleSpace();
+			GUILayout.Label("Under Construction");
+			/*
+			Dictionary<string, bool> isOutofdate = new Dictionary<string, bool>();
 			DateTime badDate = new DateTime((System.Int64)0);
 			foreach(var plat in AssetBundleListingEditor.Settings.platforms){
 				DateTime lastBundleWriteTime = AssetBundleListingEditor.Settings.GetLastWriteTime(listing, plat.name);
@@ -120,7 +123,9 @@ public class AssetBundleManagerWindow : EditorWindow {
 				else{
 					GUILayout.Label(AssetBundleListingEditor.Settings.checkedBox,GUILayout.Width(60));
 				}
+				
 			}
+			*/
 			GUILayout.EndHorizontal();
 		}
 		GUILayout.EndVertical();
