@@ -22,6 +22,7 @@ public class AssetBundleContents : ScriptableObject {
 
 [System.Serializable]
 public class BundleContentsEntry{
+	public int id; //Entries with the same ID represent the same asset with different tag configurations
 	public string name;  //Name the asset is included in the bundle as
 	public Object asset;
 	public bool isInherited; //Whether the asset was inherited from the default specification

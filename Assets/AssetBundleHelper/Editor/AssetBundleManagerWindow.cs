@@ -81,7 +81,7 @@ public class AssetBundleManagerWindow : EditorWindow {
 			Dictionary<string, bool> isOutofdate = new Dictionary<string, bool>();
 			DateTime badDate = new DateTime((System.Int64)0);
 			foreach(var plat in AssetBundleListingEditor.Settings.platforms){
-				DateTime lastBundleWriteTime = AssetBundleListingEditor.Settings.GetLastWriteTime(listing, plat.name);
+				DateTime lastBundleWriteTime = GetLastWriteTime(listing, plat.name);
 				bool exists = lastBundleWriteTime != badDate;
 				isOutofdate[plat.name] = listingFile.LastWriteTimeUtc > lastBundleWriteTime;
 				var platObjs = listing.GetAssetsForPlatform(plat.name);
@@ -139,5 +139,15 @@ public class AssetBundleManagerWindow : EditorWindow {
 				AssetBundleListingEditor.BuildBundleForCurrentPlatforms(listing);
 			}
 		}
+	}
+	
+	public DateTime GetLastWriteTime(AssetBundleListing listing, string platform){
+		string path = AssetBundleListingEditor.Settings.bundleDirectoryRelativeToProjectFolder
+		+ Path.DirectorySeparatorChar + listing.name + "_" + platform+".unity3d";
+		var fileInfo = new FileInfo(path);
+		if(!fileInfo.Exists){
+			return new DateTime((System.Int64)0);
+		}
+		return fileInfo.LastWriteTimeUtc;
 	}
 }

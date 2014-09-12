@@ -1,5 +1,7 @@
 using UnityEngine;
+#if UNITY_EDITOR
 using UnityEditor;
+#endif
 using System;
 using System.Linq;
 using System.IO;
@@ -8,6 +10,26 @@ using System.Collections.Generic;
 using System.Text;
 
 public class AssetBundleHelperSettings : ScriptableObject {
+#if UNITY_EDITOR
+	public static AssetBundleHelperSettings GetInstance(){
+		var path = System.IO.Path.Combine("Assets/AssetBundleHelper","Settings.asset");
+		var so = AssetDatabase.LoadMainAssetAtPath(path) as AssetBundleHelperSettings;
+		if(so)
+			return so;
+		so = ScriptableObject.CreateInstance<AssetBundleHelperSettings>();
+		so.platforms = new BundlePlatform[1];
+		so.platforms[0] = new BundlePlatform();
+		so.platforms[0].name = AssetBundleRuntimeSettings.DefaultPlatform;
+		so.platforms[0].unityBuildTarget = BuildTarget.WebPlayer;
+		DirectoryInfo di = new DirectoryInfo(Application.dataPath+"/AssetBundleHelper");
+		if(!di.Exists){
+			di.Create();
+		}
+		AssetDatabase.CreateAsset(so,path);
+		AssetDatabase.SaveAssets();
+		return so;
+	}	
+	
 	public bool hotload; //For development purposes, bypass need to update assetbundles constantly
 	public BundlePlatform[] platforms;
 	public BundleTagGroup[] tagGroups;
@@ -17,17 +39,7 @@ public class AssetBundleHelperSettings : ScriptableObject {
 	public GUIStyle deleteButtonStyle;
 	public GUIStyle addButtonStyle;
 	public Texture2D box, checkedBox, outOfDate;
-	
-	public DateTime GetLastWriteTime(AssetBundleListing listing, string platform){
-		string path = bundleDirectoryRelativeToProjectFolder
-		+ Path.DirectorySeparatorChar + listing.name + "_" + platform+".unity3d";
-		var fileInfo = new FileInfo(path);
-		if(!fileInfo.Exists){
-			return new DateTime((System.Int64)0);
-		}
-		return fileInfo.LastWriteTimeUtc;
-	}
-	
+
 	public List<BundlePlatform> GetPlatformsForCurrentBuildTarget(BuildTarget target){
 		var result = platforms.Where((x) => x.unityBuildTarget == target).ToList();
 		var defaultList = new List<BundlePlatform>();
@@ -83,28 +95,6 @@ public class AssetBundleHelperSettings : ScriptableObject {
 	}
 	[System.NonSerialized]
 	BundleTagGroup _platformGroup;
-}
 
-[System.Serializable]
-public class BundleTag{
-	public string name = "";
-	public Texture2D icon32;
-	
-	public static BundleTag NoTag{
-		get{
-			return noTag;
-		}
-	}
-	private static BundleTag noTag = new BundleTag();
-}
-
-[System.Serializable]
-public class BundlePlatform : BundleTag{
-	public BuildTarget unityBuildTarget;
-}
-
-[System.Serializable]
-public class BundleTagGroup{
-	public string name;
-	public BundleTag[] tags;
+#endif
 }
