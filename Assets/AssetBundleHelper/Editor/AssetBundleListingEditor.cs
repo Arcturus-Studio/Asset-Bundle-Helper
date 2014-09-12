@@ -142,44 +142,62 @@ public class AssetBundleListingEditor : Editor {
 			verticalTags.Add(noTagList);
 		}
 		
+		bool showHorizontalTags = horizontalTags[0] != BundleTag.NoTag;
+		bool showVerticalTags = verticalTags[0][0] != BundleTag.NoTag;
+		bool extraWideLeftColumn = !showHorizontalTags || !showVerticalTags;
+		const int normalColumnWidth = 60;
+		const int wideColumnWidth = 100;
+		const int extraWideColumnWidth = 160;
+		GUILayoutOption[] tagLayoutParams = new GUILayoutOption[]{GUILayout.Height(16), GUILayout.Width(normalColumnWidth)};
+		GUILayoutOption[] wideLayoutParams = new GUILayoutOption[]{GUILayout.Height(16), GUILayout.Width(extraWideLeftColumn ? extraWideColumnWidth : wideColumnWidth)};		
 		GUILayout.BeginVertical(GUI.skin.box);
+		
 		//Header
 		GUILayout.BeginHorizontal(EditorStyles.toolbar);
-		const int normalColumnWidth = 60;
-		const int wideColumnWidth = 80;
-		GUILayoutOption[] tagLayoutParams = new GUILayoutOption[]{GUILayout.Height(16), GUILayout.Width(normalColumnWidth)};
-		GUILayoutOption[] wideLayoutParams = new GUILayoutOption[]{GUILayout.Height(16), GUILayout.Width(wideColumnWidth)};
-		GUILayout.Label("Asset", wideLayoutParams);	
+		//Key asset header
+		//If we don't have vertical tags, include the first horizontal tag in this label
+		if(showHorizontalTags && !showVerticalTags){
+			GUILayout.BeginHorizontal(wideLayoutParams);
+			GUILayout.Label("Asset (");
+			GUILayout.Label(new GUIContent(horizontalTags[0].name, horizontalTags[0].icon32), GUILayout.Height(16));
+			GUILayout.Label(")");
+			GUILayout.FlexibleSpace();
+			GUILayout.EndHorizontal();
+		}
+		else{
+			GUILayout.Label("Asset", wideLayoutParams);	
+		}
 		GUILayout.Space(normalColumnWidth);
-		foreach(var tag in horizontalTags){
-			GUILayout.Label(new GUIContent(tag.name, tag.icon32), tagLayoutParams);
+		//Draw horizontal tag labels
+		//If we don't have vertical tags, skip the first horizontal tag since it's already been drawn
+		for(int i = (showVerticalTags ? 0 : 1); i < horizontalTags.Count; i++){
+			GUILayout.Label(new GUIContent(horizontalTags[i].name, horizontalTags[i].icon32), tagLayoutParams);
 		}
 		GUILayout.FlexibleSpace();
 		GUILayout.EndHorizontal();
 		
 		//Asset listing
 		foreach(var entry in assets){
-			if(entry.defaultTagString == null){
-				Debug.LogWarning("null default tag string");
-			}
 			GUILayout.BeginHorizontal();
 			GUILayout.Space(2);			
 			GUILayout.BeginHorizontal();
 			BundledAssetField(entry, entry.defaultTagString, wideLayoutParams); //Default/Key asset
-			GUILayout.BeginVertical();
-			foreach(List<BundleTag> tags in verticalTags){
-				if(tags.Count == 1){
-					GUILayout.Label(new GUIContent(tags[0].name, tags[0].icon32), tagLayoutParams);
+			if(showVerticalTags){
+				GUILayout.BeginVertical();
+				foreach(List<BundleTag> tags in verticalTags){
+					if(tags.Count == 1){
+						GUILayout.Label(new GUIContent(tags[0].name, tags[0].icon32), tagLayoutParams);
+					}
+					else{
+						GUILayout.Label(BuildTagString(tags), tagLayoutParams);
+					}
 				}
-				else{
-					GUILayout.Label(BuildTagString(tags), tagLayoutParams);
-				}
+				GUILayout.EndVertical();
 			}
-			GUILayout.EndVertical();
 			for(int i = 0; i < horizontalTags.Count; i++){
 				GUILayout.BeginVertical();
 				for(int j = 0; j < verticalTags.Count; j++){
-					if(i > 0 || j > 0){
+					if(i > 0 || j > 0){ //Skip "all defaults" field, since that's the key asset
 						BundledAssetField(entry, BuildTagString(horizontalTags[i].Yield().Concat(verticalTags[j])), tagLayoutParams);						
 					}
 					else{
