@@ -10,6 +10,7 @@ public class AssetBundleManagerWindow : EditorWindow {
 	
 	public List<FileInfo> detectedBundlesFileInfos;
 	public List<AssetBundleListing> detectedBundles;
+	public Vector2 bundleListScrollPos;
 	
 	[MenuItem("Window/AssetBundleManager %&5")]
 	public static void Initialize(){
@@ -32,6 +33,7 @@ public class AssetBundleManagerWindow : EditorWindow {
 				detectedBundles.Add(abl);
 			}
 		}
+		Repaint();
 	}
 
 	public void OnGUI(){
@@ -40,7 +42,16 @@ public class AssetBundleManagerWindow : EditorWindow {
 			return;
 		}
 		EditorGUIUtility.LookLikeControls();
-		GUILayout.BeginHorizontal();
+		//Layout changes during a refresh which makes mousedown event throw an exception.
+		//Delaying refresh to the Repaint stage causes the window to flicker,
+		//so just consume the exception and stop trying to parse mouse input this frame
+		try{ 
+			GUILayout.BeginHorizontal();
+		}
+		catch(ArgumentException){
+			Event.current.type = EventType.used;
+			return;
+		}
 		GUILayout.Label("Bundles", EditorStyles.boldLabel);
 		GUILayout.FlexibleSpace();
 		if(GUILayout.Button("Refresh",EditorStyles.miniButton)){
@@ -51,14 +62,10 @@ public class AssetBundleManagerWindow : EditorWindow {
 		GUILayout.BeginHorizontal(EditorStyles.toolbar);
 		GUILayout.Label("Name", GUILayout.MinWidth(100));
 		GUILayout.FlexibleSpace();
-		foreach(var plat in AssetBundleListingEditor.Settings.platforms){
-			GUILayout.Label(new GUIContent(plat.name,plat.icon32),GUILayout.Height(14), GUILayout.Width(60));
-		}
+		GUILayout.Label("Variants");
 		GUILayout.EndHorizontal();
 		
-		List<AssetBundleListing> listingsOutOfDate = new List<AssetBundleListing>();
-		var curPlats = AssetBundleListingEditor.Settings.GetPlatformsForCurrentBuildTarget(EditorUserBuildSettings.activeBuildTarget);
-		
+		bundleListScrollPos = GUILayout.BeginScrollView(bundleListScrollPos);
 		for(int i = 0; i < detectedBundles.Count; i++){
 			AssetBundleListing listing = detectedBundles[i];
 			if(listing == null){
@@ -76,69 +83,39 @@ public class AssetBundleManagerWindow : EditorWindow {
 				EditorGUIUtility.PingObject(Selection.activeObject);
 			}
 			GUILayout.FlexibleSpace();
-			GUILayout.Label("Under Construction");
-			/*
-			Dictionary<string, bool> isOutofdate = new Dictionary<string, bool>();
-			DateTime badDate = new DateTime((System.Int64)0);
-			foreach(var plat in AssetBundleListingEditor.Settings.platforms){
-				DateTime lastBundleWriteTime = GetLastWriteTime(listing, plat.name);
-				bool exists = lastBundleWriteTime != badDate;
-				isOutofdate[plat.name] = listingFile.LastWriteTimeUtc > lastBundleWriteTime;
-				var platObjs = listing.GetAssetsForPlatform(plat.name);
-				
-				string[] strings = platObjs.ConvertAll<string>((x) => { 
-					return AssetDatabase.GetAssetPath(x);
-				}).Distinct().ToArray<string>();
-				strings = AssetDatabase.GetDependencies(strings);
-				
-				platObjs = Array.ConvertAll<string,UnityEngine.Object>(strings, (x) => {
-					return AssetDatabase.LoadMainAssetAtPath(x);
-				}).ToList();
-				
-				foreach(var obj in platObjs){
-					string projectPath = AssetDatabase.GetAssetPath(obj);
-					if(projectPath == ""){
-						continue;
-					}
-					FileInfo objFileInfo = new FileInfo(projectPath);
-					string metaPath = AssetDatabase.GetTextMetaFilePathFromAssetPath(projectPath);
-					FileInfo metaFileInfo = new FileInfo(metaPath);
-					if(objFileInfo.LastWriteTimeUtc > lastBundleWriteTime
-						|| (metaPath != "" && metaFileInfo.LastWriteTimeUtc > lastBundleWriteTime)){
-						isOutofdate[plat.name] = true;
-					}
-				}
-				if(!exists){
-					GUILayout.Label(AssetBundleListingEditor.Settings.box,GUILayout.Width(60));
-					if(curPlats.Contains(plat) && !listingsOutOfDate.Contains(listing)){
-						listingsOutOfDate.Add(listing);
-					}
-				}
-				else if(isOutofdate[plat.name]){
-					GUILayout.Label(AssetBundleListingEditor.Settings.outOfDate,GUILayout.Width(60));
-					if(curPlats.Contains(plat) && !listingsOutOfDate.Contains(listing)){
-						listingsOutOfDate.Add(listing);
-					}					
-				}
-				else{
-					GUILayout.Label(AssetBundleListingEditor.Settings.checkedBox,GUILayout.Width(60));
-				}
-				
-			}
-			*/
+			GUILayout.Label(AssetBundleListingEditor.Settings.MaskToTagString(detectedBundles[i].tagMask));
 			GUILayout.EndHorizontal();
 		}
+		GUILayout.EndScrollView();
 		GUILayout.EndVertical();
-		
-		string platList = "";
-		foreach(var plat in curPlats){
-			platList += " "+plat.name;
+
+		if(GUILayout.Button("Build AssetBundles for all platforms", GUILayout.Height(48))){
+			foreach(var platform in AssetBundleListingEditor.Settings.platforms){
+				BuildBundlesForPlatform(platform);
+			}			
 		}
-		if(listingsOutOfDate.Count > 0 &&  GUILayout.Button("Build missing/out of date bundles for"+platList + " ("+listingsOutOfDate.Count+")")){
-			foreach(AssetBundleListing listing in listingsOutOfDate){
-				AssetBundleListingEditor.BuildBundleForCurrentPlatforms(listing);
+		foreach(var platform in AssetBundleListingEditor.Settings.platforms){
+			if(GUILayout.Button("Build AssetBundles for " + platform.name)){
+				BuildBundlesForPlatform(platform);
 			}
 		}
+	}
+	
+	private void BuildBundlesForPlatform(BundlePlatform platform){
+		//Construct base build map
+		AssetBundleBuild[] baseBuild = new AssetBundleBuild[detectedBundles.Count];
+		for(int i = 0; i < detectedBundles.Count; i++){
+			List<BundleTagGroup> tagGroups = detectedBundles[i].ActiveTagGroupsForcePlatformGroup;
+			List<BundleTag> defaultNonPlatformTags = BundleTagUtils.DefaultTagCombination(tagGroups, 1); //1 = skip platform group
+			
+			var defaultTagsIncPlatform = ((BundleTag)platform).Yield().Concat(defaultNonPlatformTags);
+			string defaultTagStringIncPlatform = BundleTagUtils.BuildTagString(defaultTagsIncPlatform);
+			string defaultTagString = BundleTagUtils.BuildTagString(BundleTagUtils.DefaultTagCombination(detectedBundles[i].ActiveTagGroups, 0));
+			
+			baseBuild[i].assetBundleName = detectedBundles[i].name + "_" + defaultTagStringIncPlatform;					 
+			baseBuild[i].assetNames = detectedBundles[i].GetAssetsForTags(defaultTagString).Select(x => AssetDatabase.GetAssetPath(x)).ToArray();
+		}
+		BuildPipeline.BuildAssetBundles("Bundles/", baseBuild, BuildAssetBundleOptions.None, platform.unityBuildTarget);
 	}
 	
 	public DateTime GetLastWriteTime(AssetBundleListing listing, string platform){

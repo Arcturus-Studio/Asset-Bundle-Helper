@@ -27,6 +27,12 @@ public class AssetBundleListing : ScriptableObject {
 			return AssetBundleHelperSettings.GetInstance().MaskToTagGroups(tagMask);
 		}
 	}
+	
+	public List<BundleTagGroup> ActiveTagGroupsForcePlatformGroup{
+		get{
+			return AssetBundleHelperSettings.GetInstance().MaskToTagGroups(tagMask | 1);
+		}
+	}
 
 	public List<Object> GetAssetsForTags(string tags){
 		return assets.FirstOrDefault(x => x.tags == tags).Load().GetAssets();

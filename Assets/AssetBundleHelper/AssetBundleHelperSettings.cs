@@ -53,7 +53,7 @@ public class AssetBundleHelperSettings : ScriptableObject {
 		for(int i = 0; i < allTags.Length && i < 32; i++){
 			if((mask & (1 << i)) != 0){
 				if(result.Length > 0){
-					result.Append(".");
+					result.Append(", ");
 				}
 				result.Append(allTags[i].name);
 			}

@@ -60,9 +60,9 @@ public class AssetBundleListingEditor : Editor {
 		AssetBundleListing listing = target as AssetBundleListing;		
 		
 		//Create entries for existing AssetBundleContents for this tag set
-		string defaultTagString = BuildTagString(listing.ActiveTagGroups.Select(x => x.tags.FirstOrDefault()));
+		string defaultTagString = BundleTagUtils.BuildTagString(listing.ActiveTagGroups.Select(x => x.tags.FirstOrDefault()));
 		//Tag strings for combinations of active tags
-		List<string> tagStrings = new List<string>(TagComboBuilder(listing.ActiveTagGroups, 0).Select(x => BuildTagString(x)));
+		List<string> tagStrings = new List<string>(BundleTagUtils.TagCombinations(listing.ActiveTagGroups, 0).Select(x => BundleTagUtils.BuildTagString(x)));
 		foreach(var pair in listing.assets.Where(x => tagStrings.Contains(x.tags))){
 			AssetBundleContents contents = pair.Load();
 			if(contents != null){
@@ -91,18 +91,6 @@ public class AssetBundleListingEditor : Editor {
 		AssetBundleListing listing = target as AssetBundleListing;
 		EditorGUIUtility.LookLikeControls();
 		
-		if(GUILayout.Button("DEBUG DUMP LISTINGEDITORENTRIES")){
-			StringBuilder sb = new StringBuilder();
-			for(int i = 0; i < assets.Count; i++){				
-				sb.AppendLine("Entry " + (i+1));
-				sb.AppendLine("Default TagString: " + assets[i].defaultTagString);
-				foreach(var kvp in assets[i].assets){
-					sb.AppendLine(kvp.Key + "->" + kvp.Value);
-				}
-			}
-			Debug.Log(sb.ToString());
-		}
-		
 		//TODO: Move this someplace else
 		string[] tagMaskOptions = new string[Settings.tagGroups.Length+1];
 		tagMaskOptions[0] = "Platform";
@@ -121,9 +109,7 @@ public class AssetBundleListingEditor : Editor {
 		}
 		GUILayout.EndHorizontal();
 		
-		GUILayout.Label("[DBG: Tagstring = " + Settings.MaskToTagString(listing.tagMask) + "]", EditorStyles.miniLabel);
-		List<BundleTagGroup> tagGroups = Settings.MaskToTagGroups(listing.tagMask);
-		
+		List<BundleTagGroup> tagGroups = Settings.MaskToTagGroups(listing.tagMask);		
 		IList<BundleTag> horizontalTags;
 		if(tagGroups.Count > 0){
 			horizontalTags = tagGroups[0].tags;
@@ -134,7 +120,7 @@ public class AssetBundleListingEditor : Editor {
 		
 		List<List<BundleTag>> verticalTags = new List<List<BundleTag>>();
 		if(tagGroups.Count > 1){
-			verticalTags.AddRange(TagComboBuilder(tagGroups, 1));
+			verticalTags.AddRange(BundleTagUtils.TagCombinations(tagGroups, 1));
 		}
 		else{
 			var noTagList = new List<BundleTag>();
@@ -189,7 +175,7 @@ public class AssetBundleListingEditor : Editor {
 						GUILayout.Label(new GUIContent(tags[0].name, tags[0].icon32), tagLayoutParams);
 					}
 					else{
-						GUILayout.Label(BuildTagString(tags), tagLayoutParams);
+						GUILayout.Label(BundleTagUtils.BuildTagString(tags), tagLayoutParams);
 					}
 				}
 				GUILayout.EndVertical();
@@ -198,7 +184,7 @@ public class AssetBundleListingEditor : Editor {
 				GUILayout.BeginVertical();
 				for(int j = 0; j < verticalTags.Count; j++){
 					if(i > 0 || j > 0){ //Skip "all defaults" field, since that's the key asset
-						BundledAssetField(entry, BuildTagString(horizontalTags[i].Yield().Concat(verticalTags[j])), tagLayoutParams);						
+						BundledAssetField(entry, BundleTagUtils.BuildTagString(horizontalTags[i].Yield().Concat(verticalTags[j])), tagLayoutParams);						
 					}
 					else{
 						GUILayout.Label("", tagLayoutParams);
@@ -219,7 +205,7 @@ public class AssetBundleListingEditor : Editor {
 		GUILayout.FlexibleSpace();
 		if(GUILayout.Button("",Settings.addButtonStyle)){
 			var newEntry = new ListingEditorEntry();
-			newEntry.defaultTagString = BuildTagString(listing.ActiveTagGroups.Select(x => x.tags.FirstOrDefault()));
+			newEntry.defaultTagString = BundleTagUtils.BuildTagString(listing.ActiveTagGroups.Select(x => x.tags.FirstOrDefault()));
 			assets.Add(newEntry);
 			AssignEntryIds();
 			UpdateBundleContents();
@@ -232,34 +218,15 @@ public class AssetBundleListingEditor : Editor {
 			toRemove.Clear();
 			UpdateBundleContents();
 		}
-		
-		//Settings
-		GUILayout.Label("Bundle Build Options",EditorStyles.boldLabel);
-		listing.gatherDependencies =  EditorGUILayout.Toggle("Gather Dependencies", listing.gatherDependencies);
-		listing.compressed =  EditorGUILayout.Toggle("Compressed", listing.compressed);
-		if(GUI.changed){
-			serializedObject.ApplyModifiedProperties();
-			EditorUtility.SetDirty(target);
-		}
-		
-		var curPlats = Settings.GetPlatformsForCurrentBuildTarget(EditorUserBuildSettings.activeBuildTarget);
-		string platList = "";
-		foreach(var plat in curPlats){
-			platList += " "+plat.name;
-		}
-		
-		if(GUILayout.Button("Build AssetBundle ("+platList+")")){
-			BuildBundleForCurrentPlatforms(listing);
-		}
 	}
 	
 	protected void UpdateBundleContents(){
 		System.Console.WriteLine("Updating bundle contents");
 		var listing = target as AssetBundleListing;
 		int tagSetCount = 0;
-		foreach(var tagSet in TagComboBuilder(listing.ActiveTagGroups, 0)){
+		foreach(var tagSet in BundleTagUtils.TagCombinations(listing.ActiveTagGroups, 0)){
 			System.Console.WriteLine("UPD: Processing tag set " + (++tagSetCount) );
-			string tagString = BuildTagString(tagSet);
+			string tagString = BundleTagUtils.BuildTagString(tagSet);
 			System.Console.WriteLine("UPD: " + tagString);
 			AssetBundleContents bundle = listing.GetBundleContentsForTags(tagString);
 			bundle.assets.Clear();
@@ -281,77 +248,7 @@ public class AssetBundleListingEditor : Editor {
 		}
 		EditorUtility.SetDirty(listing);
 	}
-	
-	//Helper function for building all combinations of tag strings
-	private IEnumerable<List<BundleTag>> TagComboBuilder(List<BundleTagGroup> list, int index){
-		//End condition 1: reached list end, yield list for each tag
-		if(index == list.Count-1){
-			foreach(BundleTag tag in list[index].tags){
-				var newList = new List<BundleTag>(1);
-				newList.Add(tag);
-				yield return newList;
-			}
-		}
-		//End condition 2: Past end of list (most likely due to list being empty): Return list containing "No Tag"
-		else if (index >= list.Count){
-			var newList = new List<BundleTag>();
-			newList.Add(BundleTag.NoTag);
-			yield return newList;
-		}
-		//Recurse: Yield each tag followed by all combinations of later tags
-		else{
-			foreach(List<BundleTag> suffix in TagComboBuilder(list, index+1)){
-				foreach(BundleTag tag in list[index].tags){
-					var newList = new List<BundleTag>(suffix.Count + 1);
-					newList.Add(tag);
-					newList.AddRange(suffix);
-					yield return newList;
-				}
-			}
-		}
-	}
-	
-	private string BuildTagString(IEnumerable<BundleTag> tags){		
-		if(tags != null){
-			StringBuilder result = new StringBuilder();
-			foreach(BundleTag tag in tags){
-				if(tag == BundleTag.NoTag){
-					continue;
-				}
-				if(result.Length > 0){
-					result.Append(".");
-				}
-				result.Append(tag.name);
-			}
-			return result.ToString();
-		}
-		else{
-			return "";
-		}
-	}
-	
-	public static void BuildBundleForCurrentPlatforms(AssetBundleListing listing){
-		Debug.LogWarning("TODO: Build bundle for current platforms");
-		/*
-		var curPlats = Settings.GetPlatformsForCurrentBuildTarget(EditorUserBuildSettings.activeBuildTarget);
-		foreach(BundlePlatform plat in curPlats){
-			string path = Settings.bundleDirectoryRelativeToProjectFolder;
-			DirectoryInfo di = new DirectoryInfo(path);
-			path += "/" + listing.name + "_" + plat.name +".unity3d";
-			if(!di.Exists)
-				di.Create();
-			BuildAssetBundleOptions babOpts = BuildAssetBundleOptions.CompleteAssets;
-			if(listing.gatherDependencies)
-				babOpts |= BuildAssetBundleOptions.CollectDependencies;
-			if(!listing.compressed)
-				babOpts |= BuildAssetBundleOptions.UncompressedAssetBundle;
-			var files = listing.GetAssetsForPlatform(plat.name);
-			var names = listing.GetNamesForPlatform(plat.name);
-			BuildPipeline.BuildAssetBundleExplicitAssetNames(files.ToArray(),names.ToArray(), path, babOpts, plat.unityBuildTarget);
-		}
-		*/
-	}
-	
+		
 	private void BundledAssetField(ListingEditorEntry entry, string tagString, params GUILayoutOption[] layout){		
 		Object targetObj = null;
 		Object defaultObj = null;
