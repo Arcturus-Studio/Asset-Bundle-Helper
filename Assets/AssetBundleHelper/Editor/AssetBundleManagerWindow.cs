@@ -42,9 +42,10 @@ public class AssetBundleManagerWindow : EditorWindow {
 			return;
 		}
 		EditorGUIUtility.LookLikeControls();
-		//Layout changes during a refresh which makes mousedown event throw an exception.
+		//Hack: Layout changes during a refresh which makes mousedown event throw an exception.
 		//Delaying refresh to the Repaint stage causes the window to flicker,
 		//so just consume the exception and stop trying to parse mouse input this frame
+		//TODO: This breaks elsewhere if bundles go missing. Fix properly
 		try{ 
 			GUILayout.BeginHorizontal();
 		}
@@ -102,7 +103,7 @@ public class AssetBundleManagerWindow : EditorWindow {
 	}
 	
 	private void BuildBundlesForPlatform(BundlePlatform platform){
-		//Construct base build map
+		//Bundle assets with default tagstrings
 		AssetBundleBuild[] baseBuild = new AssetBundleBuild[detectedBundles.Count];
 		for(int i = 0; i < detectedBundles.Count; i++){
 			List<BundleTagGroup> tagGroups = detectedBundles[i].ActiveTagGroupsForcePlatformGroup;
@@ -116,6 +117,22 @@ public class AssetBundleManagerWindow : EditorWindow {
 			baseBuild[i].assetNames = detectedBundles[i].GetAssetsForTags(defaultTagString).Select(x => AssetDatabase.GetAssetPath(x)).ToArray();
 		}
 		BuildPipeline.BuildAssetBundles("Bundles/", baseBuild, BuildAssetBundleOptions.None, platform.unityBuildTarget);
+		
+		//Bundle assets with variant tagstrings
+		for(int i = 0; i < detectedBundles.Count; i++){
+			List<BundleTagGroup> tagGroups = detectedBundles[i].ActiveTagGroupsForcePlatformGroup;
+			if(tagGroups.Count == 1){
+				continue; //Bundle contents do not vary, or only vary accross platform, do not need to build
+			}
+			
+			foreach(var tagCombo in BundleTagUtils.TagCombinations(tagGroups, 1)){
+				string tagString = BundleTagUtils.BuildTagString(((BundleTag)platform).Yield().Concat(tagCombo));
+				AssetBundleBuild[] variantBuild = new AssetBundleBuild[1];
+				variantBuild[0].assetBundleName = detectedBundles[i].name + "_" + tagString;
+				variantBuild[0].assetNames = detectedBundles[i].GetAssetsForTags(tagString).Select(x => AssetDatabase.GetAssetPath(x)).ToArray();
+				BuildPipeline.BuildAssetBundles("Bundles/", variantBuild, BuildAssetBundleOptions.None, platform.unityBuildTarget);
+			}			
+		}
 	}
 	
 	public DateTime GetLastWriteTime(AssetBundleListing listing, string platform){
