@@ -104,6 +104,7 @@ public class AssetBundleManagerWindow : EditorWindow {
 	
 	private void BuildBundlesForPlatform(BundlePlatform platform){
 		//Bundle assets with default tagstrings
+		string targetDirPath = AssetBundleListingEditor.Settings.bundleDirectoryRelativeToProjectFolder;
 		AssetBundleBuild[] baseBuild = new AssetBundleBuild[detectedBundles.Count];
 		for(int i = 0; i < detectedBundles.Count; i++){
 			List<BundleTagGroup> tagGroups = detectedBundles[i].ActiveTagGroupsForcePlatformGroup;
@@ -116,7 +117,29 @@ public class AssetBundleManagerWindow : EditorWindow {
 			baseBuild[i].assetBundleName = detectedBundles[i].name + "_" + defaultTagStringIncPlatform;					 
 			baseBuild[i].assetNames = detectedBundles[i].GetAssetsForTags(defaultTagString).Select(x => AssetDatabase.GetAssetPath(x)).ToArray();
 		}
-		BuildPipeline.BuildAssetBundles("Bundles/", baseBuild, BuildAssetBundleOptions.None, platform.unityBuildTarget);
+		BuildPipeline.BuildAssetBundles(targetDirPath, baseBuild, BuildAssetBundleOptions.None, platform.unityBuildTarget);
+		
+		//Read dependency information		
+		DirectoryInfo targetDir = new DirectoryInfo(Application.dataPath);
+		targetDir = targetDir.Parent;
+		targetDir = new DirectoryInfo(Path.Combine(targetDir.FullName, targetDirPath));
+		string manifestBundlePath = Path.Combine(targetDir.FullName, targetDir.Name);
+		var www = new WWW("file://" + manifestBundlePath);
+		AssetBundle manifestBundle = www.assetBundle;
+		AssetBundleManifest manifest = (AssetBundleManifest)manifestBundle.LoadAsset("AssetBundleManifest");
+		manifestBundle.Unload(false);
+		foreach(string assetBundleName in manifest.GetAllAssetBundles()){
+			AssetBundleListing listing = detectedBundles.Find(x => x.name.ToLower() == assetBundleName.Substring(0, assetBundleName.LastIndexOf("_")));
+			if(!listing){
+				Debug.LogError("No AssetBundleListing asset found for manifest name " + assetBundleName + ", could not record dependency information");
+				continue;
+			}
+			listing.dependencyNames.Clear();
+			foreach(string dependency in manifest.GetDirectDependencies(assetBundleName)){
+				listing.dependencyNames.Add(dependency.Substring(0, dependency.LastIndexOf("_")));
+			}
+			EditorUtility.SetDirty(listing);
+		}
 		
 		//Bundle assets with variant tagstrings
 		for(int i = 0; i < detectedBundles.Count; i++){
@@ -130,18 +153,8 @@ public class AssetBundleManagerWindow : EditorWindow {
 				AssetBundleBuild[] variantBuild = new AssetBundleBuild[1];
 				variantBuild[0].assetBundleName = detectedBundles[i].name + "_" + tagString;
 				variantBuild[0].assetNames = detectedBundles[i].GetAssetsForTags(tagString).Select(x => AssetDatabase.GetAssetPath(x)).ToArray();
-				BuildPipeline.BuildAssetBundles("Bundles/", variantBuild, BuildAssetBundleOptions.None, platform.unityBuildTarget);
+				BuildPipeline.BuildAssetBundles(targetDirPath, variantBuild, BuildAssetBundleOptions.None, platform.unityBuildTarget);
 			}			
 		}
-	}
-	
-	public DateTime GetLastWriteTime(AssetBundleListing listing, string platform){
-		string path = AssetBundleListingEditor.Settings.bundleDirectoryRelativeToProjectFolder
-		+ Path.DirectorySeparatorChar + listing.name + "_" + platform+".unity3d";
-		var fileInfo = new FileInfo(path);
-		if(!fileInfo.Exists){
-			return new DateTime((System.Int64)0);
-		}
-		return fileInfo.LastWriteTimeUtc;
 	}
 }

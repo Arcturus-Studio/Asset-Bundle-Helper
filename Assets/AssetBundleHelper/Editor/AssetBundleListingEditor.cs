@@ -211,7 +211,21 @@ public class AssetBundleListingEditor : Editor {
 			UpdateBundleContents();
 		}
 		GUILayout.EndHorizontal();
-		GUILayout.EndVertical();
+		GUILayout.EndVertical(); //End of Box
+		
+		//Dependency list
+		GUIStyle miniLabelWordWrap = new GUIStyle(EditorStyles.miniLabel);
+		miniLabelWordWrap.wordWrap = true;
+		miniLabelWordWrap.margin = new RectOffset();
+		miniLabelWordWrap.padding = new RectOffset(0, 0, -4, -4);
+		if(listing.dependencyNames.Count > 0){
+			GUILayout.Label("Bundle Dependencies: " + string.Join(", ", listing.dependencyNames.ToArray()), miniLabelWordWrap);
+		}
+		else{
+			GUILayout.Label("Bundle Dependencies: None", miniLabelWordWrap);			
+		}
+		GUILayout.Label("(As of last build)", EditorStyles.miniLabel);
+		
 		//Handle removed entries
 		if(toRemove.Count > 0){
 			assets.RemoveAll((x) => toRemove.Contains(x));

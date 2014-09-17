@@ -12,6 +12,7 @@ public class AssetBundleListing : ScriptableObject {
 	public bool compressed = true;
 	public int tagMask = 0;	
 	public List<TagPathPair> assets = new List<TagPathPair>();
+	public List<string> dependencyNames = new List<string>(); //Names of other asset bundle listings
 	
 	public IEnumerator Get(string assetName){
 		return AssetBundleLoader.Get(this, assetName);
