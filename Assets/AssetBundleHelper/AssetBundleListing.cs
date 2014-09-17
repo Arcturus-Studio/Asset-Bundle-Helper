@@ -22,6 +22,20 @@ public class AssetBundleListing : ScriptableObject {
 		AssetBundleLoader.Release(this, assetName);
 	}
 	
+	public string FileName(string tagString){
+		return FileNamePrefix + "_" + tagString.ToLower();
+	}
+	
+	public string FileNamePrefix{
+		get{
+			return name.ToLower();
+		}
+	}
+	
+	public static string GetFileNamePrefix(string fileName){
+		return fileName.Substring(0, fileName.LastIndexOf("_"));
+	}
+	
 #if UNITY_EDITOR
 	public List<BundleTagGroup> ActiveTagGroups{
 		get{

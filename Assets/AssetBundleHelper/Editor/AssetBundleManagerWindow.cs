@@ -114,7 +114,7 @@ public class AssetBundleManagerWindow : EditorWindow {
 			string defaultTagStringIncPlatform = BundleTagUtils.BuildTagString(defaultTagsIncPlatform);
 			string defaultTagString = BundleTagUtils.BuildTagString(BundleTagUtils.DefaultTagCombination(detectedBundles[i].ActiveTagGroups, 0));
 			
-			baseBuild[i].assetBundleName = detectedBundles[i].name + "_" + defaultTagStringIncPlatform;					 
+			baseBuild[i].assetBundleName = detectedBundles[i].FileName(defaultTagStringIncPlatform);
 			baseBuild[i].assetNames = detectedBundles[i].GetAssetsForTags(defaultTagString).Select(x => AssetDatabase.GetAssetPath(x)).ToArray();
 		}
 		BuildPipeline.BuildAssetBundles(targetDirPath, baseBuild, BuildAssetBundleOptions.None, platform.unityBuildTarget);
@@ -129,14 +129,14 @@ public class AssetBundleManagerWindow : EditorWindow {
 		AssetBundleManifest manifest = (AssetBundleManifest)manifestBundle.LoadAsset("AssetBundleManifest");
 		manifestBundle.Unload(false);
 		foreach(string assetBundleName in manifest.GetAllAssetBundles()){
-			AssetBundleListing listing = detectedBundles.Find(x => x.name.ToLower() == assetBundleName.Substring(0, assetBundleName.LastIndexOf("_")));
+			AssetBundleListing listing = detectedBundles.Find(x => x.FileNamePrefix == AssetBundleListing.GetFileNamePrefix(assetBundleName));
 			if(!listing){
 				Debug.LogError("No AssetBundleListing asset found for manifest name " + assetBundleName + ", could not record dependency information");
 				continue;
 			}
 			listing.dependencyNames.Clear();
 			foreach(string dependency in manifest.GetDirectDependencies(assetBundleName)){
-				listing.dependencyNames.Add(dependency.Substring(0, dependency.LastIndexOf("_")));
+				listing.dependencyNames.Add(AssetBundleListing.GetFileNamePrefix(dependency));
 			}
 			EditorUtility.SetDirty(listing);
 		}
@@ -151,7 +151,7 @@ public class AssetBundleManagerWindow : EditorWindow {
 			foreach(var tagCombo in BundleTagUtils.TagCombinations(tagGroups, 1)){
 				string tagString = BundleTagUtils.BuildTagString(((BundleTag)platform).Yield().Concat(tagCombo));
 				AssetBundleBuild[] variantBuild = new AssetBundleBuild[1];
-				variantBuild[0].assetBundleName = detectedBundles[i].name + "_" + tagString;
+				variantBuild[0].assetBundleName = detectedBundles[i].FileName(tagString);
 				variantBuild[0].assetNames = detectedBundles[i].GetAssetsForTags(tagString).Select(x => AssetDatabase.GetAssetPath(x)).ToArray();
 				BuildPipeline.BuildAssetBundles(targetDirPath, variantBuild, BuildAssetBundleOptions.None, platform.unityBuildTarget);
 			}			
