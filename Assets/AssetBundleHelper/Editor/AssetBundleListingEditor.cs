@@ -218,8 +218,8 @@ public class AssetBundleListingEditor : Editor {
 		miniLabelWordWrap.wordWrap = true;
 		miniLabelWordWrap.margin = new RectOffset();
 		miniLabelWordWrap.padding = new RectOffset(0, 0, -4, -4);
-		if(listing.dependencyNames.Count > 0){
-			GUILayout.Label("Bundle Dependencies: " + string.Join(", ", listing.dependencyNames.ToArray()), miniLabelWordWrap);
+		if(listing.dependencies.Count > 0){
+			GUILayout.Label("Bundle Dependencies: " + string.Join(", ", listing.dependencies.Select(x => x.name).ToArray()), miniLabelWordWrap);
 		}
 		else{
 			GUILayout.Label("Bundle Dependencies: None", miniLabelWordWrap);			

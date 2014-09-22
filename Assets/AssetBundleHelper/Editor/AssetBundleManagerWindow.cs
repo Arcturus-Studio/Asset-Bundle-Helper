@@ -134,9 +134,10 @@ public class AssetBundleManagerWindow : EditorWindow {
 				Debug.LogError("No AssetBundleListing asset found for manifest name " + assetBundleName + ", could not record dependency information");
 				continue;
 			}
-			listing.dependencyNames.Clear();
-			foreach(string dependency in manifest.GetDirectDependencies(assetBundleName)){
-				listing.dependencyNames.Add(AssetBundleListing.GetFileNamePrefix(dependency));
+			listing.dependencies.Clear();
+			foreach(string dependencyName in manifest.GetDirectDependencies(assetBundleName)){
+				AssetBundleListing dependency = detectedBundles.Find(x => x.FileNamePrefix == AssetBundleListing.GetFileNamePrefix(dependencyName));
+				listing.dependencies.Add(dependency);
 			}
 			EditorUtility.SetDirty(listing);
 		}

@@ -58,4 +58,24 @@ public static class BundleTagUtils {
 			return "";
 		}
 	}
+	
+	//Builds a period-delimited tag string from an enumerable of strings
+	public static string BuildTagString(IEnumerable<string> tags){		
+		if(tags != null){
+			StringBuilder result = new StringBuilder();
+			foreach(string tag in tags){
+				if(string.IsNullOrEmpty(tag)){
+					continue;
+				}
+				if(result.Length > 0){
+					result.Append(".");
+				}
+				result.Append(tag);
+			}
+			return result.ToString();
+		}
+		else{
+			return "";
+		}
+	}
 }

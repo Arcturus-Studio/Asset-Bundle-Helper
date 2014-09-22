@@ -19,7 +19,7 @@ public class AssetBundleHelperSettings : ScriptableObject {
 		so = ScriptableObject.CreateInstance<AssetBundleHelperSettings>();
 		so.platforms = new BundlePlatform[1];
 		so.platforms[0] = new BundlePlatform();
-		so.platforms[0].name = AssetBundleRuntimeSettings.DefaultPlatform;
+		so.platforms[0].name = "Default";
 		so.platforms[0].unityBuildTarget = BuildTarget.WebPlayer;
 		DirectoryInfo di = new DirectoryInfo(Application.dataPath+"/AssetBundleHelper");
 		if(!di.Exists){
@@ -33,7 +33,6 @@ public class AssetBundleHelperSettings : ScriptableObject {
 	public bool hotload; //For development purposes, bypass need to update assetbundles constantly
 	public BundlePlatform[] platforms;
 	public BundleTagGroup[] tagGroups;
-	public string defaultPlatform = "Default";
 	public string bundleDirectoryRelativeToProjectFolder;
 	public GUIStyle headerStyle;
 	public GUIStyle deleteButtonStyle;
@@ -95,6 +94,9 @@ public class AssetBundleHelperSettings : ScriptableObject {
 	}
 	[System.NonSerialized]
 	BundleTagGroup _platformGroup;
-
+	
+	private void OnValidate(){
+		AssetBundleRuntimeSettings.TagGroups = PlatformAndTagGroups;
+	}
 #endif
 }

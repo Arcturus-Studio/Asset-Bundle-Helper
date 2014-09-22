@@ -12,7 +12,7 @@ public class AssetBundleListing : ScriptableObject {
 	public bool compressed = true;
 	public int tagMask = 0;	
 	public List<TagPathPair> assets = new List<TagPathPair>();
-	public List<string> dependencyNames = new List<string>(); //Names of other asset bundle listings
+	public List<AssetBundleListing> dependencies = new List<AssetBundleListing>();
 	
 	public IEnumerator Get(string assetName){
 		return AssetBundleLoader.Get(this, assetName);
@@ -22,11 +22,20 @@ public class AssetBundleListing : ScriptableObject {
 		AssetBundleLoader.Release(this, assetName);
 	}
 	
+	//File name for this asset bundle with the currently active tag set
+	public string ActiveFileName {
+		get {
+			return FileName(
+				BundleTagUtils.BuildTagString(AssetBundleRuntimeSettings.MaskedActiveTags(tagMask | 1)) // | 1 -> Always include platform
+			);
+		}
+	}
+	
 	public string FileName(string tagString){
 		return FileNamePrefix + "_" + tagString.ToLower();
 	}
 	
-	public string FileNamePrefix{
+	public string FileNamePrefix {
 		get{
 			return name.ToLower();
 		}

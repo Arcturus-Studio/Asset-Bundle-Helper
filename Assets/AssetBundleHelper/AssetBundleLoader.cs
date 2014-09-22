@@ -1,4 +1,7 @@
 ﻿using UnityEngine;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -15,22 +18,39 @@ public static class AssetBundleLoader {
 	
 	private static DictionaryCache<AssetBundle> bundleCache = new DictionaryCache<AssetBundle>();
 	private static DictionaryCache<AssetBundleContentsLink> fastPathCache = new DictionaryCache<AssetBundleContentsLink>();
+	private static AssetBundleLoaderHelper LoaderHelper{
+		get{
+			if(!loaderHelper){
+				#if UNITY_EDITOR
+				//Find pre-existing if possible so we don't leak objects with every recompile
+				var obj = GameObject.Find("/__AssetBundleLoader");
+				if(obj){
+					loaderHelper = obj.GetComponent<AssetBundleLoaderHelper>();
+				}
+				if(!loaderHelper){
+					loaderHelper = EditorUtility.CreateGameObjectWithHideFlags("__AssetBundleLoader", HideFlags.HideAndDontSave, typeof(AssetBundleLoaderHelper)).GetComponent<AssetBundleLoaderHelper>();
+				}
+				#else
+				loaderHelper = new GameObject("__AssetBundleLoader", typeof(AssetBundleLoaderHelper)).GetComponent<AssetBundleLoaderHelper>();
+				loaderHelper.HideFlags = HideFlags.HideAndDontSave;
+				#endif
+			}
+			return loaderHelper;
+		}
+	}
+	private static AssetBundleLoaderHelper loaderHelper;
 	
-	public static string AssetBundleFileNameForPlatform(string assetBundleListingName, string platform){
-		return assetBundleListingName + "_" + platform + ".unity3d";
+	public static string AssetBundlePath(string assetBundleFileName){
+		return Path.Combine(BasePath, assetBundleFileName);
 	}
 	
-	public static string AssetBundleContentsLinkResourceNameForPlatform(string assetBundleListingName, string platform){
-		return assetBundleListingName + "_" + platform; //No extension when loading from resources
-	}
-	
-	public static string AssetBundlePath(string assetBundleListingName){
-		return Path.Combine(BasePath, AssetBundleFileNameForPlatform(assetBundleListingName, Platform));
+	public static string ContentsLinkResourcePath(string assetBundleFileName){
+		return assetBundleFileName; //In Resources
 	}
 	
 	public static IEnumerator Get(AssetBundleListing listing, string assetName){
 		if(AssetBundleRuntimeSettings.FastPath){
-			string key = AssetBundleContentsLinkResourceNameForPlatform(listing.name, Platform);
+			string key = ContentsLinkResourcePath(listing.ActiveFileName);
 			//Load contents link if necessary
 			if(!fastPathCache.ContainsKey(key)){
 				Debug.Log("Load ContentsLink " + key);
@@ -39,11 +59,31 @@ public static class AssetBundleLoader {
 			yield return fastPathCache.Get(key).bundleContents.Get(assetName);
 		}
 		else{
-			string key = AssetBundleFileNameForPlatform(listing.name, Platform);
-			//Load asset bundle if necessary
+			yield return Get(listing);
+			AssetBundle bundle = null; // ????
+			//Load asset from bundle
+			if(bundle.Contains(assetName)){
+				yield return bundle.LoadAsset(assetName);
+			}
+			else{
+				Debug.LogWarning("Bundle " + listing + "does not contain " + assetName);
+				yield break;
+			}
+		}
+	}
+	
+	public static IEnumerator Get(AssetBundleListing listing){
+		if(AssetBundleRuntimeSettings.FastPath){
+			throw new System.NotSupportedException("Fastpath not supported yet");
+		}
+		else{
+			foreach(AssetBundleListing dependency in listing.dependencies){
+				yield return LoaderHelper.StartCoroutine(Get(dependency));
+			}
+			string key = listing.ActiveFileName;
 			if(!bundleCache.ContainsKey(key)){
-				Debug.Log("Load AssetBundle from " + AssetBundlePath(listing.name));
-				var www = new WWW(AssetBundlePath(listing.name));
+				Debug.Log("Load AssetBundle from " + AssetBundlePath(key));
+				var www = new WWW(AssetBundlePath(key));
 				yield return www;
 				var wwwBundle = www.assetBundle;
 				if(wwwBundle){
@@ -51,21 +91,14 @@ public static class AssetBundleLoader {
 				}
 				www.Dispose();
 			}
-			//Load asset from bundle
 			var bundle = bundleCache.Get(key);
-			if(bundle.Contains(assetName)){
-				yield return bundle.LoadAsset(assetName);
-			}
-			else{
-				Debug.LogWarning("Bundle does not contain " + assetName);
-				yield break;
-			}
+			yield return bundle;
 		}
 	}
 	
 	public static void Release(AssetBundleListing listing, string assetName){
 		if(AssetBundleRuntimeSettings.FastPath){
-			string key = AssetBundleContentsLinkResourceNameForPlatform(listing.name, Platform);
+			string key = ContentsLinkResourcePath(listing.ActiveFileName);
 			if(!fastPathCache.ContainsKey(key)){
 				Debug.LogWarning("No contents link with id " + key);
 				return;
@@ -73,7 +106,7 @@ public static class AssetBundleLoader {
 			fastPathCache.Release(key);
 		}
 		else{
-			string key = AssetBundleFileNameForPlatform(listing.name, Platform);
+			string key = listing.ActiveFileName;
 			if(!bundleCache.ContainsKey(key)){
 				Debug.LogWarning("No bundle with id " + key);
 				return;

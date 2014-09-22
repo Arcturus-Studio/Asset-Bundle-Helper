@@ -3,7 +3,9 @@
 [System.Serializable]
 public class BundleTag{
 	public string name = "";
+#if UNITY_EDITOR
 	public Texture2D icon32;
+#endif
 	
 	public static BundleTag NoTag{
 		get{
