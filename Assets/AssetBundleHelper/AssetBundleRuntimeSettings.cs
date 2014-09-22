@@ -64,7 +64,7 @@ public class AssetBundleRuntimeSettings : ScriptableSingleton<AssetBundleRuntime
 	}
 	
 	#if UNITY_EDITOR
-	//This gets set when tag config in AssetBundleHelperSettings is changed
+	//This gets set when tag config in AssetBundleEditorSettings is changed
 	public static BundleTagGroup[] TagGroups {
 		set{
 			Instance.tagGroups = value;

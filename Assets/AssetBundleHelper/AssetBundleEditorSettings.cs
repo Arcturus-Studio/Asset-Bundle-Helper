@@ -9,14 +9,14 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 
-public class AssetBundleHelperSettings : ScriptableObject {
+public class AssetBundleEditorSettings : ScriptableObject {
 #if UNITY_EDITOR
-	public static AssetBundleHelperSettings GetInstance(){
+	public static AssetBundleEditorSettings GetInstance(){
 		var path = System.IO.Path.Combine("Assets/AssetBundleHelper","Settings.asset");
-		var so = AssetDatabase.LoadMainAssetAtPath(path) as AssetBundleHelperSettings;
+		var so = AssetDatabase.LoadMainAssetAtPath(path) as AssetBundleEditorSettings;
 		if(so)
 			return so;
-		so = ScriptableObject.CreateInstance<AssetBundleHelperSettings>();
+		so = ScriptableObject.CreateInstance<AssetBundleEditorSettings>();
 		so.platforms = new BundlePlatform[1];
 		so.platforms[0] = new BundlePlatform();
 		so.platforms[0].name = "Default";

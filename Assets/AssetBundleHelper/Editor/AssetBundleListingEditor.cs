@@ -9,12 +9,12 @@ using System.Text;
 [CustomEditor(typeof(AssetBundleListing))]
 public class AssetBundleListingEditor : Editor {
 	
-	static AssetBundleHelperSettings settings;
+	static AssetBundleEditorSettings settings;
 	
-	public static AssetBundleHelperSettings Settings{
+	public static AssetBundleEditorSettings Settings{
 		get{
 			if(settings == null){
-				settings = AssetBundleHelperSettings.GetInstance();
+				settings = AssetBundleEditorSettings.GetInstance();
 			}
 			return settings;
 		}

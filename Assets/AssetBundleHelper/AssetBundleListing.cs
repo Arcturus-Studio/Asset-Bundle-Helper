@@ -48,13 +48,13 @@ public class AssetBundleListing : ScriptableObject {
 #if UNITY_EDITOR
 	public List<BundleTagGroup> ActiveTagGroups{
 		get{
-			return AssetBundleHelperSettings.GetInstance().MaskToTagGroups(tagMask);
+			return AssetBundleEditorSettings.GetInstance().MaskToTagGroups(tagMask);
 		}
 	}
 	
 	public List<BundleTagGroup> ActiveTagGroupsForcePlatformGroup{
 		get{
-			return AssetBundleHelperSettings.GetInstance().MaskToTagGroups(tagMask | 1);
+			return AssetBundleEditorSettings.GetInstance().MaskToTagGroups(tagMask | 1);
 		}
 	}
 

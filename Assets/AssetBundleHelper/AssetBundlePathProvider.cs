@@ -15,7 +15,7 @@ public class AssetBundlePathProvider {
 		//Editors: Load out of assets directory
 		if (Application.isEditor)
 		{
-			cachedPath = fileProtocol + Path.Combine(Directory.GetCurrentDirectory(), AssetBundleHelperSettings.GetInstance().bundleDirectoryRelativeToProjectFolder);            
+			cachedPath = fileProtocol + Path.Combine(Directory.GetCurrentDirectory(), AssetBundleEditorSettings.GetInstance().bundleDirectoryRelativeToProjectFolder);            
 		}
 		else
 		#endif
