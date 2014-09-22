@@ -50,6 +50,7 @@ public static class AssetBundleLoader {
 	
 	public static IEnumerator Get(AssetBundleListing listing, string assetName){
 		if(AssetBundleRuntimeSettings.FastPath){
+			//TODO: Load dependencies
 			string key = ContentsLinkResourcePath(listing.ActiveFileName);
 			//Load contents link if necessary
 			if(!fastPathCache.ContainsKey(key)){
@@ -59,8 +60,9 @@ public static class AssetBundleLoader {
 			yield return fastPathCache.Get(key).bundleContents.Get(assetName);
 		}
 		else{
-			yield return Get(listing);
-			AssetBundle bundle = null; // ????
+			Coroutine<AssetBundle> bundleCoroutine = LoaderHelper.StartCoroutine<AssetBundle>(Get(listing));
+			yield return bundleCoroutine.coroutine;
+			AssetBundle bundle = bundleCoroutine.Value;
 			//Load asset from bundle
 			if(bundle.Contains(assetName)){
 				yield return bundle.LoadAsset(assetName);
@@ -97,6 +99,10 @@ public static class AssetBundleLoader {
 	}
 	
 	public static void Release(AssetBundleListing listing, string assetName){
+		Release(listing);		
+	}
+	
+	public static void Release(AssetBundleListing listing){
 		if(AssetBundleRuntimeSettings.FastPath){
 			string key = ContentsLinkResourcePath(listing.ActiveFileName);
 			if(!fastPathCache.ContainsKey(key)){
@@ -114,6 +120,9 @@ public static class AssetBundleLoader {
 			var bundle = bundleCache.GetUntracked(key);
 			if(bundleCache.Release(key)){
 				bundle.Unload(false);
+			}
+			foreach(AssetBundleListing dependency in listing.dependencies){
+				Release(dependency);
 			}
 		}
 	}
