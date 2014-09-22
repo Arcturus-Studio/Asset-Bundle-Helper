@@ -144,16 +144,25 @@ public class AssetBundleManagerWindow : EditorWindow {
 		
 		//Bundle assets with variant tagstrings
 		for(int i = 0; i < detectedBundles.Count; i++){
-			List<BundleTagGroup> tagGroups = detectedBundles[i].ActiveTagGroupsForcePlatformGroup;
-			if(tagGroups.Count == 1){
-				continue; //Bundle contents do not vary, or only vary accross platform, do not need to build
+			List<BundleTagGroup> tagGroupsForcePlatform = detectedBundles[i].ActiveTagGroupsForcePlatformGroup;
+			List<BundleTagGroup> tagGroups = detectedBundles[i].ActiveTagGroups;
+			if(tagGroupsForcePlatform.Count == 1){
+				continue; //Bundle contents do not vary, or only vary accross platform, do not need to build variants
 			}
+			bool contentsVariesWithPlatform = tagGroups.Count == tagGroupsForcePlatform.Count;
 			
-			foreach(var tagCombo in BundleTagUtils.TagCombinations(tagGroups, 1)){
-				string tagString = BundleTagUtils.BuildTagString(((BundleTag)platform).Yield().Concat(tagCombo));
+			foreach(var tagComboNoPlatform in BundleTagUtils.TagCombinations(tagGroupsForcePlatform, 1)){
+				string getFileNameTagString = BundleTagUtils.BuildTagString(((BundleTag)platform).Yield().Concat(tagComboNoPlatform));
+				string getAssetsTagString;
+				if(contentsVariesWithPlatform){
+					getAssetsTagString = getFileNameTagString;
+				}
+				else{
+					getAssetsTagString = BundleTagUtils.BuildTagString(tagComboNoPlatform);
+				}
 				AssetBundleBuild[] variantBuild = new AssetBundleBuild[1];
-				variantBuild[0].assetBundleName = detectedBundles[i].FileName(tagString);
-				variantBuild[0].assetNames = detectedBundles[i].GetAssetsForTags(tagString).Select(x => AssetDatabase.GetAssetPath(x)).ToArray();
+				variantBuild[0].assetBundleName = detectedBundles[i].FileName(getFileNameTagString);
+				variantBuild[0].assetNames = detectedBundles[i].GetAssetsForTags(getAssetsTagString).Select(x => AssetDatabase.GetAssetPath(x)).ToArray();
 				BuildPipeline.BuildAssetBundles(targetDirPath, variantBuild, BuildAssetBundleOptions.None, platform.unityBuildTarget);
 			}			
 		}

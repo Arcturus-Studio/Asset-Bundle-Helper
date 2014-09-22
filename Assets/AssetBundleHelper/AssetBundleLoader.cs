@@ -32,7 +32,7 @@ public static class AssetBundleLoader {
 				}
 				#else
 				loaderHelper = new GameObject("__AssetBundleLoader", typeof(AssetBundleLoaderHelper)).GetComponent<AssetBundleLoaderHelper>();
-				loaderHelper.HideFlags = HideFlags.HideAndDontSave;
+				loaderHelper.gameObject.hideFlags = HideFlags.HideAndDontSave;
 				#endif
 			}
 			return loaderHelper;
