@@ -14,12 +14,12 @@ public class AssetBundleListing : ScriptableObject {
 	public List<TagPathPair> assets = new List<TagPathPair>();
 	public List<AssetBundleListing> dependencies = new List<AssetBundleListing>();
 	
-	public IEnumerator Get(string assetName){
-		return AssetBundleLoader.Get(this, assetName);
+	public Coroutine<T> GetAsset<T>(string assetName) where T : UnityEngine.Object{
+		return AssetBundleLoader.GetAsset<T>(this, assetName);
 	}
 	
-	public void Release(string assetName){
-		AssetBundleLoader.Release(this, assetName);
+	public void ReleaseAsset(string assetName){
+		AssetBundleLoader.ReleaseAsset(this, assetName);
 	}
 	
 	//File name for this asset bundle with the currently active tag set

@@ -2,19 +2,5 @@ ManifestFileVersion: 0
 AssetBunudleManifest:
   AssetBundleInfos:
     Info_0:
-      Name: scenes
-      Dependencies:
-        Dependency_0: material.a
-        Dependency_1: bundlecube
-        Dependency_2: bundlesphere
-    Info_1:
-      Name: material.a
+      Name: materials_android.sd
       Dependencies: {}
-    Info_2:
-      Name: bundlecube
-      Dependencies:
-        Dependency_0: material.a
-    Info_3:
-      Name: bundlesphere
-      Dependencies:
-        Dependency_0: material.a

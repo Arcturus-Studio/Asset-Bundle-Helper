@@ -61,7 +61,7 @@ public class Coroutine<T>{
 				yield break;
 			}
 			object yielded = coroutine.Current;
-			if(yielded != null && yielded is T){
+			if(yielded != null && yielded is T && !(yielded is YieldInstruction)){
 				returnVal = (T)yielded;
 				yield break;
 			}

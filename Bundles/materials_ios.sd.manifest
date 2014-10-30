@@ -1,0 +1,18 @@
+ManifestFileVersion: 0
+CRC: 2892269639
+Hashes:
+  AssetFileHash:
+    serializedVersion: 2
+    Hash: 77e62fef0640656e7f4b84f639893d1b
+  TypeTreeHash:
+    serializedVersion: 2
+    Hash: 2e13d2857d3d04b223b2c9a4c87e4c27
+HashAppended: 0
+ClassTypes:
+- Class: 21
+  Script: {instanceID: 0}
+- Class: 48
+  Script: {instanceID: 0}
+Assets:
+  Asset_0: Assets/Test/MaterialB/Material.mat
+Dependencies: {}

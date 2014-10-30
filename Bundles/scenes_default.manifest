@@ -1,0 +1,49 @@
+ManifestFileVersion: 0
+CRC: 3638468413
+Hashes:
+  AssetFileHash:
+    serializedVersion: 2
+    Hash: 2a89da57eb0d3df4448ca760ff74ea45
+  TypeTreeHash:
+    serializedVersion: 2
+    Hash: 568374c52a220bc4849d5117bb25e63e
+HashAppended: 0
+ClassTypes:
+- Class: 1
+  Script: {instanceID: 0}
+- Class: 4
+  Script: {instanceID: 0}
+- Class: 20
+  Script: {instanceID: 0}
+- Class: 21
+  Script: {instanceID: 0}
+- Class: 23
+  Script: {instanceID: 0}
+- Class: 28
+  Script: {instanceID: 0}
+- Class: 33
+  Script: {instanceID: 0}
+- Class: 43
+  Script: {instanceID: 0}
+- Class: 48
+  Script: {instanceID: 0}
+- Class: 81
+  Script: {instanceID: 0}
+- Class: 92
+  Script: {instanceID: 0}
+- Class: 104
+  Script: {instanceID: 0}
+- Class: 108
+  Script: {instanceID: 0}
+- Class: 124
+  Script: {instanceID: 0}
+- Class: 127
+  Script: {instanceID: 0}
+- Class: 136
+  Script: {instanceID: 0}
+- Class: 157
+  Script: {instanceID: 0}
+Assets:
+  Asset_0: Assets/Test/Scenes/TestScene.unity
+Dependencies:
+  Dependency_0: Bundles/materials_default.hd

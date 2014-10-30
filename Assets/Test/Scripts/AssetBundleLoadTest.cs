@@ -6,8 +6,9 @@ public class AssetBundleLoadTest : MonoBehaviour {
 	public AssetBundleListing sceneBundle;
 	public string levelName;
 
-	public IEnumerator Start(){
-		yield return StartCoroutine(AssetBundleLoader.Get(sceneBundle));
+	private IEnumerator Start(){
+		AssetBundleRuntimeSettings.SetActiveTag("Resolution", "sd");
+		yield return AssetBundleLoader.GetBundle(sceneBundle).coroutine;
 		Application.LoadLevel(levelName);
 	}
 }
