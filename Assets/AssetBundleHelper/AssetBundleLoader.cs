@@ -17,7 +17,7 @@ public static class AssetBundleLoader {
 	public static AssetBundlePathProvider basePathProvider = new AssetBundlePathProvider();
 	
 	private static DictionaryCache<AssetBundle> bundleCache = new DictionaryCache<AssetBundle>();
-	private static DictionaryCache<AssetBundleContentsLink> fastPathCache = new DictionaryCache<AssetBundleContentsLink>();
+
 	private static AssetBundleLoaderHelper LoaderHelper{
 		get{
 			if(!loaderHelper){
@@ -60,77 +60,51 @@ public static class AssetBundleLoader {
 		ReleaseBundle(listing);		
 	}
 	
-	public static void ReleaseBundle(AssetBundleListing listing){
-		if(AssetBundleRuntimeSettings.FastPath){
-			string key = ContentsLinkResourcePath(listing.ActiveFileName);
-			if(!fastPathCache.ContainsKey(key)){
-				Debug.LogWarning("No contents link with id " + key);
-				return;
-			}
-			fastPathCache.Release(key);
+	public static void ReleaseBundle(AssetBundleListing listing){		
+		string key = listing.ActiveFileName;
+		if(!bundleCache.ContainsKey(key)){
+			Debug.LogError("No bundle with id " + key);
+			return;
 		}
-		else{
-			string key = listing.ActiveFileName;
-			if(!bundleCache.ContainsKey(key)){
-				Debug.LogWarning("No bundle with id " + key);
-				return;
-			}
-			var bundle = bundleCache.GetUntracked(key);
-			if(bundleCache.Release(key)){
-				bundle.Unload(false);
-			}
-			foreach(AssetBundleListing dependency in listing.dependencies){
-				ReleaseBundle(dependency);
-			}
+		var bundle = bundleCache.GetUntracked(key);
+		if(bundleCache.Release(key)){
+			bundle.Unload(false);
+		}
+		foreach(AssetBundleListing dependency in listing.dependencies){
+			ReleaseBundle(dependency);
 		}
 	}
 	
 	private static IEnumerator GetAssetCoroutine(AssetBundleListing listing, string assetName){
-		if(AssetBundleRuntimeSettings.FastPath){
-			//TODO: Load dependencies
-			string key = ContentsLinkResourcePath(listing.ActiveFileName);
-			//Load contents link if necessary
-			if(!fastPathCache.ContainsKey(key)){
-				fastPathCache.Add(key, Resources.Load<AssetBundleContentsLink>(key));
-			}
-			yield return fastPathCache.Get(key).bundleContents.Get(assetName);
+		Coroutine<AssetBundle> bundleCoroutine = GetBundle(listing);
+		yield return bundleCoroutine.coroutine;
+		AssetBundle bundle = bundleCoroutine.Value;
+		//Load asset from bundle
+		if(bundle.Contains(assetName)){
+			yield return bundle.LoadAsset(assetName);
 		}
 		else{
-			Coroutine<AssetBundle> bundleCoroutine = GetBundle(listing);
-			yield return bundleCoroutine.coroutine;
-			AssetBundle bundle = bundleCoroutine.Value;
-			//Load asset from bundle
-			if(bundle.Contains(assetName)){
-				yield return bundle.LoadAsset(assetName);
-			}
-			else{
-				Debug.LogWarning("Bundle " + listing + "does not contain " + assetName);
-				yield break;
-			}
+			Debug.LogWarning("Bundle " + listing + "does not contain " + assetName);
+			yield break;
 		}
 	}
 	
 	private static IEnumerator GetListingCoroutine(AssetBundleListing listing){
-		if(AssetBundleRuntimeSettings.FastPath){
-			throw new System.NotSupportedException("Fastpath not supported yet");
+		foreach(AssetBundleListing dependency in listing.dependencies){
+			yield return GetBundle(dependency).coroutine;
 		}
-		else{
-			foreach(AssetBundleListing dependency in listing.dependencies){
-				yield return GetBundle(dependency).coroutine;
+		string key = listing.ActiveFileName;
+		if(!bundleCache.ContainsKey(key)){
+			Debug.Log("Load AssetBundle from " + AssetBundlePath(key));
+			var www = new WWW(AssetBundlePath(key));
+			yield return www;
+			var wwwBundle = www.assetBundle;
+			if(wwwBundle){
+				bundleCache.Add(key, wwwBundle);
 			}
-			string key = listing.ActiveFileName;
-			if(!bundleCache.ContainsKey(key)){
-				Debug.Log("Load AssetBundle from " + AssetBundlePath(key));
-				var www = new WWW(AssetBundlePath(key));
-				yield return www;
-				var wwwBundle = www.assetBundle;
-				if(wwwBundle){
-					bundleCache.Add(key, wwwBundle);
-				}
-				www.Dispose();
-			}
-			var bundle = bundleCache.Get(key);
-			yield return bundle;
+			www.Dispose();
 		}
+		var bundle = bundleCache.Get(key);
+		yield return bundle;
 	}
 }

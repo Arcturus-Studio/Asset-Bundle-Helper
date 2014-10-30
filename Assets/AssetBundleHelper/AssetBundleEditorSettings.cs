@@ -30,7 +30,6 @@ public class AssetBundleEditorSettings : ScriptableObject {
 		return so;
 	}	
 	
-	public bool hotload; //For development purposes, bypass need to update assetbundles constantly
 	public BundlePlatform[] platforms;
 	public BundleTagGroup[] tagGroups;
 	public string bundleDirectoryRelativeToProjectFolder;

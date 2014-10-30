@@ -8,20 +8,6 @@ using System.Linq;
 
 public class AssetBundleRuntimeSettings : ScriptableSingleton<AssetBundleRuntimeSettings> {
 	
-	public static bool FastPath{
-		get{
-			return Instance.fastPath;
-		}
-#if UNITY_EDITOR
-		set{
-			Instance.fastPath = value;
-			EditorUtility.SetDirty(Instance);
-		}
-#endif
-	}
-	[SerializeField]
-	protected bool fastPath = false;
-
 	public static IEnumerable<string> ActiveTags{
 		get{
 			return Instance.tagGroups.Select(x => GetActiveTag(x.name));
