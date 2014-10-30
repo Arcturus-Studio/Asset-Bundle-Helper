@@ -106,7 +106,7 @@ public class TagPathPair{
 	
 	public void Create(AssetBundleListing sourceListing){
 		System.Console.WriteLine("Creating AssetBundleContents for " + sourceListing + " with tags \"" + tags + "\"");
-		string dir = "Assets/AssetBundleHelper/BundleContents/";
+		string dir = Path.Combine(AssetBundleEditorSettings.DirectoryPath, "BundleContents");
 		if(!Directory.Exists(dir)){
 			Directory.CreateDirectory(dir);
 		}

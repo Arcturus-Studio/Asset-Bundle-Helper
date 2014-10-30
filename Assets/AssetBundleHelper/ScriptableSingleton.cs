@@ -17,7 +17,7 @@ public abstract class ScriptableSingleton<T> : ScriptableObject where T : Script
 #if UNITY_EDITOR
 	private static string AssetPath{
 		get{
-			return "Assets/AssetBundleHelper/Resources/" + FileName + ".asset";
+			return Path.Combine(Path.Combine(AssetBundleEditorSettings.DirectoryPath, "Resources"), FileName + ".asset");
 		}
 	}
 #endif
