@@ -60,11 +60,11 @@ public class AssetBundleListingEditor : Editor {
 		AssetBundleListing listing = target as AssetBundleListing;		
 		
 		//Create entries for existing AssetBundleContents for this tag set
-		string defaultTagString = BundleTagUtils.BuildTagString(listing.ActiveTagGroups.Select(x => x.tags.FirstOrDefault()));
+		string defaultTagString = BundleTagUtils.BuildTagString(listing.SelectedTagGroups.Select(x => x.tags.FirstOrDefault()));
 		//Tag strings for combinations of active tags
-		List<string> tagStrings = new List<string>(BundleTagUtils.TagCombinations(listing.ActiveTagGroups, 0).Select(x => BundleTagUtils.BuildTagString(x)));
-		foreach(var pair in listing.assets.Where(x => tagStrings.Contains(x.tags))){
-			AssetBundleContents contents = pair.Load();
+		List<string> tagStrings = new List<string>(BundleTagUtils.TagCombinations(listing.SelectedTagGroups, 0).Select(x => BundleTagUtils.BuildTagString(x)));
+		foreach(var weakRef in listing.contentWeakRefs.Where(x => tagStrings.Contains(x.tags))){
+			AssetBundleContents contents = weakRef.Load();
 			if(contents != null){
 				foreach(var entry in contents.assets){
 					if(!assetsById.ContainsKey(entry.id)){
@@ -205,7 +205,7 @@ public class AssetBundleListingEditor : Editor {
 		GUILayout.FlexibleSpace();
 		if(GUILayout.Button("",Settings.addButtonStyle)){
 			var newEntry = new ListingEditorEntry();
-			newEntry.defaultTagString = BundleTagUtils.BuildTagString(listing.ActiveTagGroups.Select(x => x.tags.FirstOrDefault()));
+			newEntry.defaultTagString = BundleTagUtils.BuildTagString(listing.SelectedTagGroups.Select(x => x.tags.FirstOrDefault()));
 			assets.Add(newEntry);
 			AssignEntryIds();
 			UpdateBundleContents();
@@ -238,7 +238,7 @@ public class AssetBundleListingEditor : Editor {
 		System.Console.WriteLine("Updating bundle contents");
 		var listing = target as AssetBundleListing;
 		int tagSetCount = 0;
-		foreach(var tagSet in BundleTagUtils.TagCombinations(listing.ActiveTagGroups, 0)){
+		foreach(var tagSet in BundleTagUtils.TagCombinations(listing.SelectedTagGroups, 0)){
 			System.Console.WriteLine("UPD: Processing tag set " + (++tagSetCount) );
 			string tagString = BundleTagUtils.BuildTagString(tagSet);
 			System.Console.WriteLine("UPD: " + tagString);

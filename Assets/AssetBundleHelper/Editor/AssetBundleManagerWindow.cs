@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System;
 using System.Linq;
+using System.Text;
 
 public class AssetBundleManagerWindow : EditorWindow {
 	
@@ -84,7 +85,7 @@ public class AssetBundleManagerWindow : EditorWindow {
 				EditorGUIUtility.PingObject(Selection.activeObject);
 			}
 			GUILayout.FlexibleSpace();
-			GUILayout.Label(AssetBundleListingEditor.Settings.MaskToTagString(detectedBundles[i].tagMask));
+			GUILayout.Label(FormatTagGroupList(AssetBundleListingEditor.Settings.MaskToTagGroups(detectedBundles[i].tagMask)));
 			GUILayout.EndHorizontal();
 		}
 		GUILayout.EndScrollView();
@@ -102,17 +103,29 @@ public class AssetBundleManagerWindow : EditorWindow {
 		}
 	}
 	
+	//Helper function to format a list of BundleTagGroups
+	private string FormatTagGroupList(List<BundleTagGroup> tagGroups){
+		StringBuilder result = new StringBuilder();
+		foreach(BundleTagGroup tagGroup in tagGroups){
+			if(result.Length > 0){
+				result.Append(", ");
+			}
+			result.Append(tagGroup.name);
+		}
+		return result.ToString();
+	}
+	
 	private void BuildBundlesForPlatform(BundlePlatform platform){
 		//Bundle assets with default tagstrings
 		string targetDirPath = AssetBundleListingEditor.Settings.bundleDirectoryRelativeToProjectFolder;
 		AssetBundleBuild[] baseBuild = new AssetBundleBuild[detectedBundles.Count];
 		for(int i = 0; i < detectedBundles.Count; i++){
-			List<BundleTagGroup> tagGroups = detectedBundles[i].ActiveTagGroupsForcePlatformGroup;
+			List<BundleTagGroup> tagGroups = detectedBundles[i].SelectedTagGroupsForcePlatformGroup;
 			List<BundleTag> defaultNonPlatformTags = BundleTagUtils.DefaultTagCombination(tagGroups, 1); //1 = skip platform group
 			
 			var defaultTagsIncPlatform = ((BundleTag)platform).Yield().Concat(defaultNonPlatformTags);
 			string defaultTagStringIncPlatform = BundleTagUtils.BuildTagString(defaultTagsIncPlatform);
-			string defaultTagString = BundleTagUtils.BuildTagString(BundleTagUtils.DefaultTagCombination(detectedBundles[i].ActiveTagGroups, 0));
+			string defaultTagString = BundleTagUtils.BuildTagString(BundleTagUtils.DefaultTagCombination(detectedBundles[i].SelectedTagGroups, 0));
 			
 			baseBuild[i].assetBundleName = detectedBundles[i].FileName(defaultTagStringIncPlatform);
 			baseBuild[i].assetNames = detectedBundles[i].GetAssetsForTags(defaultTagString).Select(x => AssetDatabase.GetAssetPath(x)).ToArray();
@@ -144,8 +157,8 @@ public class AssetBundleManagerWindow : EditorWindow {
 		
 		//Bundle assets with variant tagstrings
 		for(int i = 0; i < detectedBundles.Count; i++){
-			List<BundleTagGroup> tagGroupsForcePlatform = detectedBundles[i].ActiveTagGroupsForcePlatformGroup;
-			List<BundleTagGroup> tagGroups = detectedBundles[i].ActiveTagGroups;
+			List<BundleTagGroup> tagGroupsForcePlatform = detectedBundles[i].SelectedTagGroupsForcePlatformGroup;
+			List<BundleTagGroup> tagGroups = detectedBundles[i].SelectedTagGroups;
 			if(tagGroupsForcePlatform.Count == 1){
 				continue; //Bundle contents do not vary, or only vary accross platform, do not need to build variants
 			}

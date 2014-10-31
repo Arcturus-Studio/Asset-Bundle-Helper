@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Linq;
 
 public class AssetBundleRuntimeSettings : ScriptableSingleton<AssetBundleRuntimeSettings> {
-	
 	public static IEnumerable<string> ActiveTags{
 		get{
 			return Instance.tagGroups.Select(x => GetActiveTag(x.name));
