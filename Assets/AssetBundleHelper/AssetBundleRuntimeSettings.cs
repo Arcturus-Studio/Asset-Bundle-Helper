@@ -7,12 +7,14 @@ using System.Collections.Generic;
 using System.Linq;
 
 public class AssetBundleRuntimeSettings : ScriptableSingleton<AssetBundleRuntimeSettings> {
+	//Set of currently active tags
 	public static IEnumerable<string> ActiveTags{
 		get{
 			return Instance.tagGroups.Select(x => GetActiveTag(x.name));
 		}
 	}
 	
+	//Set of currently active tags, filtered by the given bitmask
 	public static IEnumerable<string> MaskedActiveTags(int mask){
 		int i = 0;
 		foreach(string tag in ActiveTags){
@@ -23,6 +25,7 @@ public class AssetBundleRuntimeSettings : ScriptableSingleton<AssetBundleRuntime
 		}
 	}
 
+	//Returns the currently active tag name for the given tag group
 	public static string GetActiveTag(string groupName){
 		if(Instance.activeTags == null){
 			Instance.InitDefaultTags();
@@ -36,6 +39,7 @@ public class AssetBundleRuntimeSettings : ScriptableSingleton<AssetBundleRuntime
 		}
 	}
 	
+	//Sets the currently active tag name for the given tag group
 	public static void SetActiveTag(string groupName, string activeTag){
 		if(Instance.activeTags == null){
 			Instance.InitDefaultTags();
@@ -48,20 +52,24 @@ public class AssetBundleRuntimeSettings : ScriptableSingleton<AssetBundleRuntime
 		}
 	}
 	
-	#if UNITY_EDITOR
-	//This gets set when tag config in AssetBundleEditorSettings is changed
+#if UNITY_EDITOR
+	//Collection of all existing tag groups. Note that due to the way unity serializes data,
+	//these tag groups are seperate instances from the ones in AssetBundleEditorSettings.
+	//This gets set automatically when tag config in AssetBundleEditorSettings is changed.
 	public static BundleTagGroup[] TagGroups {
 		set{
 			Instance.tagGroups = value;
 			EditorUtility.SetDirty(Instance);
 		}
 	}
-	#endif
+#endif
 	[SerializeField] [HideInInspector]
-	private BundleTagGroup[] tagGroups;
-	[System.NonSerialized]
-	private Dictionary<string, string> activeTags;
+	private BundleTagGroup[] tagGroups; //backing field
 	
+	[System.NonSerialized]
+	private Dictionary<string, string> activeTags; //Tag group name -> active tag name
+	
+	//Sets all tag groups to have the default tag be the active tag.
 	private void InitDefaultTags(){
 		activeTags = new Dictionary<string, string>();
 		foreach(BundleTagGroup tagGroup in tagGroups){

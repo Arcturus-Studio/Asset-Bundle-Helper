@@ -6,11 +6,11 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 
+/*	Custom inspector for AssetBundleListing */
 [CustomEditor(typeof(AssetBundleListing))]
 public class AssetBundleListingEditor : Editor {
 	
-	static AssetBundleEditorSettings settings;
-	
+	//Cached (and short form) version of AssetBundleEditorSettings instance
 	public static AssetBundleEditorSettings Settings{
 		get{
 			if(settings == null){
@@ -19,7 +19,9 @@ public class AssetBundleListingEditor : Editor {
 			return settings;
 		}
 	}
+	static AssetBundleEditorSettings settings;
 	
+	//Returns the path of the directory of the selected asset, or the path of the selected directory if the selection is a directory.
 	private static string FolderPathFromSelection(){
 		var selection = Selection.GetFiltered(typeof(Object),SelectionMode.Assets);
 		string path = "Assets";
@@ -37,6 +39,7 @@ public class AssetBundleListingEditor : Editor {
 		return path;
 	}
 	
+	//Creates a new AssetBundleListing asset next to the selected asset or in the selected directory.
 	[MenuItem("Assets/Create/AssetBundleListing")]
 	public static void CreateAssetBundleListing(){
 		var so = ScriptableObject.CreateInstance<AssetBundleListing>();
@@ -91,13 +94,14 @@ public class AssetBundleListingEditor : Editor {
 		AssetBundleListing listing = target as AssetBundleListing;
 		EditorGUIUtility.LookLikeControls();
 		
-		//TODO: Move this someplace else
+		//Tag group filter options
 		string[] tagMaskOptions = new string[Settings.tagGroups.Length+1];
 		tagMaskOptions[0] = "Platform";
 		for(int i = 0; i < Settings.tagGroups.Length; i++){
 			tagMaskOptions[i+1] = Settings.tagGroups[i].name;
 		}
 		
+		//Header and mask field
 		GUILayout.BeginHorizontal();
 		GUILayout.Label("Bundle Contents",EditorStyles.boldLabel);
 		GUILayout.FlexibleSpace();		
@@ -109,7 +113,8 @@ public class AssetBundleListingEditor : Editor {
 		}
 		GUILayout.EndHorizontal();
 		
-		List<BundleTagGroup> tagGroups = Settings.MaskToTagGroups(listing.tagMask);		
+		List<BundleTagGroup> tagGroups = Settings.MaskToTagGroups(listing.tagMask);
+		//First tag group runs horizontally
 		IList<BundleTag> horizontalTags;
 		if(tagGroups.Count > 0){
 			horizontalTags = tagGroups[0].tags;
@@ -118,6 +123,7 @@ public class AssetBundleListingEditor : Editor {
 			horizontalTags = new BundleTag[]{BundleTag.NoTag};
 		}
 		
+		//All other tag groups run vertically
 		List<List<BundleTag>> verticalTags = new List<List<BundleTag>>();
 		if(tagGroups.Count > 1){
 			verticalTags.AddRange(BundleTagUtils.TagCombinations(tagGroups, 1));
@@ -128,12 +134,13 @@ public class AssetBundleListingEditor : Editor {
 			verticalTags.Add(noTagList);
 		}
 		
+		//Calc layout configuration
 		bool showHorizontalTags = horizontalTags[0] != BundleTag.NoTag;
 		bool showVerticalTags = verticalTags[0][0] != BundleTag.NoTag;
 		bool extraWideLeftColumn = !showHorizontalTags || !showVerticalTags;
 		const int normalColumnWidth = 60;
 		const int wideColumnWidth = 100;
-		const int extraWideColumnWidth = 160;
+		const int extraWideColumnWidth = 160; //For best results, should be aprox normalColumnWidth + wideColumnWidth
 		GUILayoutOption[] tagLayoutParams = new GUILayoutOption[]{GUILayout.Height(16), GUILayout.Width(normalColumnWidth)};
 		GUILayoutOption[] wideLayoutParams = new GUILayoutOption[]{GUILayout.Height(16), GUILayout.Width(extraWideLeftColumn ? extraWideColumnWidth : wideColumnWidth)};		
 		GUILayout.BeginVertical(GUI.skin.box);
@@ -194,13 +201,14 @@ public class AssetBundleListingEditor : Editor {
 			}
 			GUILayout.EndHorizontal();
 			GUILayout.FlexibleSpace();
+			//Delete entry button
 			if(GUILayout.Button("",Settings.deleteButtonStyle)){
 				toRemove.Add(entry);
 			}
 			GUILayout.Space(2);
 			GUILayout.EndHorizontal();
 		}
-		//New entry
+		//New entry button
 		GUILayout.BeginHorizontal();
 		GUILayout.FlexibleSpace();
 		if(GUILayout.Button("",Settings.addButtonStyle)){

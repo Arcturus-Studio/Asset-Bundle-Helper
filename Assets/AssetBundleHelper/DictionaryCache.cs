@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
+//Reference-counting dictionary/cache. 
 public class DictionaryCache<T> where T : class {
 
 	private class CachedEntity<V> where V : class{

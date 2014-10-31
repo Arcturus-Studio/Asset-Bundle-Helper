@@ -2,6 +2,15 @@ using UnityEngine;
 using System;
 using System.Collections;
 
+/* 	Coroutine functionality extension. Generic coroutines capable of returning values, being cancelled, and capturing exceptions.
+	General usage pattern is:
+	Coroutine<Foo> getFoo = StartCoroutine<Foo>(GetFoo())
+	yield return getFoo.coroutine;
+	Foo foo = getFoo.Value;
+	
+	Note that if the type parameter derives from YieldInstruction you will not get a return value,
+	since those are executed rather than returned in order to allow for coroutine chaining.
+*/
 public static class MonoBehaviourExt{
 	public static Coroutine<T> StartCoroutine<T>(this MonoBehaviour obj, IEnumerator coroutine){
 		Coroutine<T> coroutineObject = new Coroutine<T>();

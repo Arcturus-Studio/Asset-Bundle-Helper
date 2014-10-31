@@ -54,6 +54,7 @@ public class AssetBundleManagerWindow : EditorWindow {
 			Event.current.type = EventType.used;
 			return;
 		}
+		//Header
 		GUILayout.Label("Bundles", EditorStyles.boldLabel);
 		GUILayout.FlexibleSpace();
 		if(GUILayout.Button("Refresh",EditorStyles.miniButton)){
@@ -67,6 +68,7 @@ public class AssetBundleManagerWindow : EditorWindow {
 		GUILayout.Label("Variants");
 		GUILayout.EndHorizontal();
 		
+		//Bundle list
 		bundleListScrollPos = GUILayout.BeginScrollView(bundleListScrollPos);
 		for(int i = 0; i < detectedBundles.Count; i++){
 			AssetBundleListing listing = detectedBundles[i];
@@ -91,6 +93,7 @@ public class AssetBundleManagerWindow : EditorWindow {
 		GUILayout.EndScrollView();
 		GUILayout.EndVertical();
 
+		//Build buttons
 		if(GUILayout.Button("Build AssetBundles for all platforms", GUILayout.Height(48))){
 			foreach(var platform in AssetBundleListingEditor.Settings.platforms){
 				BuildBundlesForPlatform(platform);

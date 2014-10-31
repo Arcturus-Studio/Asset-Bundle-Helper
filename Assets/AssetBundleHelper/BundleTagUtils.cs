@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using System.Linq;
-
+/*	Utility functions for BundleTag and BundleTagGroup */
 public static class BundleTagUtils {
 	//Constructs all combinations of tags present in given list, starting from the given index in the list
 	public static IEnumerable<List<BundleTag>> TagCombinations(List<BundleTagGroup> list, int index){

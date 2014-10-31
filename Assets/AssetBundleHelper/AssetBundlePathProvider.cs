@@ -2,6 +2,7 @@
 using System.Collections;
 using System.IO;
 
+/*	Class responsible for providing the path to the directory where asset bundles are stored at runtime. */
 public class AssetBundlePathProvider {
 	private string cachedPath;
 	
@@ -10,15 +11,16 @@ public class AssetBundlePathProvider {
 			return cachedPath;
 		}
 		
+		//According to the documentation, WWW is supposed to use a triple-slash file protocol on Windows
 		string fileProtocol = UseTripleSlashFileProtocol ? "file:///" : "file://";
-		#if UNITY_EDITOR
+#if UNITY_EDITOR
 		//Editors: Load out of assets directory
 		if (Application.isEditor)
 		{
 			cachedPath = fileProtocol + Path.Combine(Directory.GetCurrentDirectory(), AssetBundleEditorSettings.GetInstance().bundleDirectoryRelativeToProjectFolder);            
 		}
 		else
-		#endif
+#endif
 		if (Application.isWebPlayer){
 			cachedPath = Application.streamingAssetsPath;
 		}

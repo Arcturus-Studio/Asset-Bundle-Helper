@@ -5,7 +5,10 @@ using System.IO;
 #endif
 using System.Collections;
 
-/** Utility class for handling singleton ScriptableObjects for data management */
+/** Utility class for handling singleton ScriptableObjects for data management. The objects are automatically created
+	when first used in the editor and are loaded from Resources so they can be freely accessed from script at any time.
+	The type parameter restriction is a bit wierd. Derived class definitions look like Foo : ScriptableSingleton<Foo>
+*/
 public abstract class ScriptableSingleton<T> : ScriptableObject where T : ScriptableSingleton<T>{
 	
 	private static string FileName{
@@ -15,6 +18,7 @@ public abstract class ScriptableSingleton<T> : ScriptableObject where T : Script
 	}
 
 #if UNITY_EDITOR
+	//Path to asset
 	private static string AssetPath{
 		get{
 			return Path.Combine(Path.Combine(AssetBundleEditorSettings.DirectoryPath, "Resources"), FileName + ".asset");
@@ -22,12 +26,14 @@ public abstract class ScriptableSingleton<T> : ScriptableObject where T : Script
 	}
 #endif
 	
+	//Path for loading from Resources.Load()
 	private static string ResourcePath{
 		get{
 			return FileName;
 		}
 	}
 
+	//Get the instance of this singleton. If it does not exist, it will be created.
 	public static T Instance{
 		get{
 			if(cachedInstance == null){
