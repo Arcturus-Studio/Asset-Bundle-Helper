@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 00d04cd9327cb4ddba5ae01a97e6300b
+MonoImporter:
+  serializedVersion: 2
+  defaultReferences:
+  - addTextureUp: {fileID: 2800000, guid: 8f0cd58e514bf4b9fbf3fa4cb308197c, type: 3}
+  - addTextureDown: {fileID: 2800000, guid: d36288c62b7ef4a9baa0e7ded94c0461, type: 3}
+  - removeTextureUp: {fileID: 2800000, guid: 26ffe859be3654fefa2fa8d682b50366, type: 3}
+  - removeTextureDown: {fileID: 2800000, guid: 2437d157422d746e3bade06d9ae02130, type: 3}
+  - moveItemAboveUp: {fileID: 2800000, guid: a2e350068cbc34f92b114557be64db5f, type: 3}
+  - moveItemAboveDown: {fileID: 2800000, guid: 7c8a0f47082544a58bbdb671c653ccbd, type: 3}
+  - moveItemBelowUp: {fileID: 2800000, guid: e8b41763eb8f4403ab7e3963fe18db53, type: 3}
+  - moveItemBelowDown: {fileID: 2800000, guid: 215bd6a5f044143fcaf5ccfdccd00b9d, type: 3}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 

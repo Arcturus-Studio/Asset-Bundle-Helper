@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: ef555ef0ccfcb4872a8b53ccae3c8cf5
+labels:
+- Platform
+- multiplatform
+- multi-platform
+- emulation
+- crossplatform
+- cross-platform
+- android
+MonoImporter:
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 

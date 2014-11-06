@@ -1,0 +1,20 @@
+fileFormatVersion: 2
+guid: 49eb3aa0eb5dc4ff996277e0cfd5ea34
+labels:
+- build
+- process
+- pipeline
+- customize
+- customized
+- automation
+- automated
+- granular
+- granularity
+- per-platform
+- platform
+MonoImporter:
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 

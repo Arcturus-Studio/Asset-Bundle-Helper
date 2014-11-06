@@ -1,0 +1,9 @@
+fileFormatVersion: 2
+guid: ff7675f52528b479d9456cb31746a141
+MonoImporter:
+  serializedVersion: 2
+  defaultReferences:
+  - edgeBoxTexture: {fileID: 2800000, guid: 2ab2177ee2a8c490c9ecf53ec5ea050e, type: 3}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 

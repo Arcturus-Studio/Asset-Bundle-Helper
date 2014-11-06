@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: d0b6f531f381941a88c4155b7e4a9a19
+labels:
+- Aspect
+- Ratio
+- resolution
+- independent
+- ui
+- gui
+- framework
+MonoImporter:
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 

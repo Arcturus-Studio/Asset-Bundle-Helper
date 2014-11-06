@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 18540db9e16d142e99735ce6a4e6b79e
+MonoImporter:
+  serializedVersion: 2
+  defaultReferences:
+  - scriptAsset: {fileID: 11500000, guid: 8bf6c7f2cabe54507b70e12d7d384225, type: 3}
+  - addTextureUp: {fileID: 2800000, guid: 8f0cd58e514bf4b9fbf3fa4cb308197c, type: 3}
+  - addTextureDown: {fileID: 2800000, guid: d36288c62b7ef4a9baa0e7ded94c0461, type: 3}
+  - removeTextureUp: {fileID: 2800000, guid: 26ffe859be3654fefa2fa8d682b50366, type: 3}
+  - removeTextureDown: {fileID: 2800000, guid: 2437d157422d746e3bade06d9ae02130, type: 3}
+  - editTexture: {fileID: 2800000, guid: 3192ab6601160476b9fb05f143007196, type: 3}
+  - cancelTextureUp: {fileID: 2800000, guid: e72bb22f10cc942f1b8d15ee9a3b4074, type: 3}
+  - cancelTextureDown: {fileID: 2800000, guid: 0dc8bad6b178a47cabb2e476894486f6, type: 3}
+  - edgeBoxTexture: {fileID: 2800000, guid: 2ab2177ee2a8c490c9ecf53ec5ea050e, type: 3}
+  - selectionTexture: {fileID: 2800000, guid: 384b52b028ae14d24b77f92e1339a513, type: 3}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 

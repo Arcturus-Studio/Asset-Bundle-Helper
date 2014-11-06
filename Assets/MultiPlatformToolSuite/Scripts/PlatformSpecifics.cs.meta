@@ -1,0 +1,19 @@
+fileFormatVersion: 2
+guid: 0ae4efef8809e4312af4851613d5d06d
+labels:
+- Platform
+- Platformspecific
+- platform-specific
+- iPhone
+- ipad
+- retina
+- display
+- resolution
+- independent
+- independence
+MonoImporter:
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 

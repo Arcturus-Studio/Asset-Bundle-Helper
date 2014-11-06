@@ -1,0 +1,138 @@
+tell application "Xcode"
+	activate
+	open "/Users/mbp/Desktop/GameDev/UnityProjects/AFTA/Builds/iPadBuild/Unity-iPhone.xcodeproj"
+	set projectFolder to the project directory of project 1
+	set pDirect to projectFolder
+	tell root group of project 1
+		set myGroup to make new group with properties {name:"BMiPhoneXCode", path type:group relative, path:"BMiPhoneXCode"}
+	end tell
+	
+	set phase1 to compile sources phase of target 1 of project 1
+	
+	--Add all classes under BMiPhoneXCode directory
+	my TraverseDirectory("", "BMiPhoneXCode", "")
+	
+	--Add GameViewController classes
+	--set myGroup to group "Classes" of root group of project 1
+	--tell myGroup
+	--	set myItemName to "GameViewController.h"
+	--	make new file reference with properties {name:myItemName, full path:((full path of myGroup) & "/" & myItemName), path type:group relative}
+	--	set myItemName to "GameViewController.m"
+	--	set fileRef to make new file reference with properties {name:myItemName, full path:((full path of myGroup) & "/" & myItemName), path type:group relative}
+	--	add fileRef to phase1
+	--end tell
+	
+	--Add GameKit.framework
+	--tell project 1
+	--	set gameKitPath to "/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS4.2.sdk/System/Library/Frameworks/GameKit.framework"
+	--	set linkPhase to link binary with libraries phase of target 1
+	--	tell root group
+	--		set gameKitFramework to make new file reference with properties {full path:gameKitPath, name:"GameKit.framework"} at end
+	--	end tell
+	--	add gameKitFramework to linkPhase
+	--end tell
+end tell
+
+on replace_chars(this_text, search_string, replacement_string)
+	set AppleScript's text item delimiters to the search_string
+	set the item_list to every text item of this_text
+	set AppleScript's text item delimiters to the replacement_string
+	set this_text to the item_list as string
+	set AppleScript's text item delimiters to ""
+	return this_text
+end replace_chars
+
+property phase1 : null
+
+property linkPhase : null
+
+property pDirect : ""
+
+property myGroup : null
+
+property sourceSuffixes : {".h", ".c", ".m", ".cp", ".cpp", ".M", ".mm"}
+
+on IsSourceFile(fileName)
+	repeat with suffix in sourceSuffixes
+		if fileName ends with suffix then return true
+	end repeat
+	return false
+end IsSourceFile
+
+on CatenateFileElements(root, path, leaf)
+	set retval to root
+	if path is not "" then
+		set retval to retval & "/" & path
+	end if
+	if leaf is not "" then
+		set retval to retval & "/" & leaf
+	end if
+	return retval
+end CatenateFileElements
+
+on TraverseDirectory(parentPath, dirName, currContainer)
+	tell application "Xcode"
+		-- Make relativePath the cumulative relative path
+		-- from the project root directory
+		if parentPath is "" then
+			set relativePath to dirName
+		else
+			set relativePath to my CatenateFileElements(parentPath, dirName, "")
+		end if
+		tell project 1
+			-- Make dirGroup refer to the group we're filling.
+			if currContainer is "" then
+				-- The root group if we're starting out.
+				set dirGroup to myGroup
+			else
+				-- A new group if this is a deeper directory.
+				tell currContainer
+					set dirGroup to make new group with properties {name:dirName, path:dirName, path type:group relative}
+				end tell
+			end if
+			
+			try
+				-- Fill contentList with the names of the
+				-- contents of the current directory.
+				set longPath to my CatenateFileElements(pDirect, parentPath, dirName)
+				set contentList to list folder longPath
+				
+				repeat with itemName in contentList
+					-- With each file in the current directory:
+					if first character of itemName is not "." then
+						set myFile to (longPath & "/" & itemName) as POSIX file
+						set fileInfo to info for myFile
+						if not alias of fileInfo then
+							if folder of fileInfo and not package folder of fileInfo then
+								-- Go down into the directories.
+								my TraverseDirectory(relativePath, itemName, dirGroup)
+							else if my IsSourceFile(itemName) then
+								-- Add source files to the group.
+								tell dirGroup
+									set fileRef to make new file reference with properties {name:itemName, full path:(longPath & "/" & itemName), path type:group relative}
+									if itemName contains ".mm" or itemName contains ".m" then
+										add fileRef to phase1
+									end if
+								end tell
+							end if
+						end if
+					end if
+				end repeat
+			end try
+		end tell
+	end tell
+end TraverseDirectory
+
+
+
+
+
+
+
+
+
+
+
+
+
+
