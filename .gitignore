@@ -1,0 +1,27 @@
+#UNITY CREATED FILES
+
+Temp/
+StagingArea/
+Obj/
+UnityGenerated/
+Library/
+
+
+#VISUAL STUDIO
+*.svd
+*.userprefs
+*.csproj
+*.pidh
+*.sln
+*.user
+*.unityproj
+*.booproj
+
+#OS and OTHER
+*.swp
+.DS_Store?
+.DS_Store
+
+#ctags file
+*tags
+*tags.meta
