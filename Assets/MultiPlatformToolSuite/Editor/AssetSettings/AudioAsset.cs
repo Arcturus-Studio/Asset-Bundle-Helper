@@ -7,13 +7,14 @@ public class AudioAsset : Asset {
 	
 	public const string nodeName = "AudioAsset";
 	
-	public int compressionBitrate;
 	public bool forceToMono;
-	public AudioImporterFormat format;
-	public bool hardware;
-	public AudioImporterLoadType loadType;
-	public bool loopable;
-	public bool threeD;
+	public AudioClipFormat format;
+	public AudioClipLoadType loadType;
+	public bool optimizeSampleRate;
+	public bool overrideSampleRate;
+	public bool preloadAudioData;
+	public float quality; //0..1
+	public float sampleRate;
 	
 	public AudioAsset() {}
 	
@@ -35,27 +36,63 @@ public class AudioAsset : Asset {
 			if(line.Contains(VerySimpleXml.StartNode(guidNodeName)))
 				guid = VerySimpleXml.NodeValue(line, guidNodeName);
 			
-			//IMPORT SETTINGS
-			if(line.Contains(VerySimpleXml.StartNode("compressionBitrate")))
-				compressionBitrate = int.Parse(VerySimpleXml.NodeValue(line, "compressionBitrate"));
-			
-			if(line.Contains(VerySimpleXml.StartNode("forceToMono")))
+			//IMPORT SETTINGS			
+			if(line.Contains(VerySimpleXml.StartNode("forceToMono"))){
 				forceToMono = bool.Parse(VerySimpleXml.NodeValue(line, "forceToMono"));
+			}
 			
-			if(line.Contains(VerySimpleXml.StartNode("format")))
-				format = (AudioImporterFormat) System.Enum.Parse(typeof(AudioImporterFormat), VerySimpleXml.NodeValue(line, "format"));
+			TryReadField(line, "forceToMono", bool.Parse, ref forceToMono);
 			
-			if(line.Contains(VerySimpleXml.StartNode("hardware")))
-				hardware = bool.Parse(VerySimpleXml.NodeValue(line, "hardware"));
+			if(line.Contains(VerySimpleXml.StartNode("format"))){
+				format = (AudioClipFormat) System.Enum.Parse(typeof(AudioClipFormat), VerySimpleXml.NodeValue(line, "format"));
+			}
 			
-			if(line.Contains(VerySimpleXml.StartNode("loadType")))
-				loadType = (AudioImporterLoadType) System.Enum.Parse(typeof(AudioImporterLoadType), VerySimpleXml.NodeValue(line, "loadType"));
+			if(line.Contains(VerySimpleXml.StartNode("loadType"))){
+				loadType = (AudioClipLoadType) System.Enum.Parse(typeof(AudioClipLoadType), VerySimpleXml.NodeValue(line, "loadType"));
+			}
 			
-			if(line.Contains(VerySimpleXml.StartNode("loopable")))
-				loopable = bool.Parse(VerySimpleXml.NodeValue(line, "loopable"));
+			if(line.Contains(VerySimpleXml.StartNode("optimizeSampleRate"))){
+				optimizeSampleRate = bool.Parse(VerySimpleXml.NodeValue(line, "optimizeSampleRate"));
+			}
 			
-			if(line.Contains(VerySimpleXml.StartNode("threeD")))
-				threeD = bool.Parse(VerySimpleXml.NodeValue(line, "threeD"));
+			if(line.Contains(VerySimpleXml.StartNode("overrideSampleRate"))){
+				overrideSampleRate = bool.Parse(VerySimpleXml.NodeValue(line, "overrideSampleRate"));
+			}
+			
+			if(line.Contains(VerySimpleXml.StartNode("preloadAudioData"))){
+				preloadAudioData = bool.Parse(VerySimpleXml.NodeValue(line, "preloadAudioData"));
+			}
+			
+			if(line.Contains(VerySimpleXml.StartNode("quality"))){
+				quality = float.Parse(VerySimpleXml.NodeValue(line, "quality"));
+			}
+			
+			if(line.Contains(VerySimpleXml.StartNode("sampleRate"))){
+				sampleRate = float.Parse(VerySimpleXml.NodeValue(line, "sampleRate"));
+			}
+				
+			//Legacy field warnings
+			if(line.Contains(VerySimpleXml.StartNode("compressionBitrate"))){
+				LogLegacyXMLWarning("compressionBitrate", line);
+			}
+			
+			if(line.Contains(VerySimpleXml.StartNode("hardware"))){
+				LogLegacyXMLWarning("hardware", line);
+			}
+			
+			if(line.Contains(VerySimpleXml.StartNode("threeD"))){
+				LogLegacyXMLWarning("threeD", line);
+			}
+				
+			if(line.Contains(VerySimpleXml.StartNode("loopable"))){
+				LogLegacyXMLWarning("loopable", line);
+			}
+		}
+	}
+	
+	private void TryReadField<T>(string line, string fieldName, System.Func<string, T> parseFunc, ref T field){
+		if(line.Contains(VerySimpleXml.StartNode(fieldName))){
+			field = parseFunc(VerySimpleXml.NodeValue(line, fieldName));
 		}
 	}
 
@@ -70,13 +107,14 @@ public class AudioAsset : Asset {
 		
 		//Do an import only if the importer's settings don't match our settings
 		if(!DoesImporterMatchSettings(audioImporter)) {
-			audioImporter.compressionBitrate = compressionBitrate;
 			audioImporter.forceToMono = forceToMono;
 			audioImporter.format = format;
-		    audioImporter.hardware = hardware;
 		    audioImporter.loadType = loadType;
-		    audioImporter.loopable = loopable;
-		    audioImporter.threeD = threeD;
+			audioImporter.optimizeSampleRate = optimizeSampleRate;
+			audioImporter.overrideSampleRate = overrideSampleRate;
+			audioImporter.quality = quality;
+			audioImporter.sampleRate = sampleRate;
+			audioImporter.preloadAudioData = preloadAudioData;
 			
 			AssetDatabase.ImportAsset(path);
 		}
@@ -85,13 +123,14 @@ public class AudioAsset : Asset {
 	public override bool DoesImporterMatchSettings(AssetImporter importer) {
 		AudioImporter audioImporter = importer as AudioImporter;
 		
-		return audioImporter.compressionBitrate == compressionBitrate &&
-				audioImporter.forceToMono == forceToMono &&
-				audioImporter.format == format &&
-			    audioImporter.hardware == hardware &&
+		return 	audioImporter.forceToMono == forceToMono &&
+				audioImporter.format == format &&			   
 			    audioImporter.loadType == loadType &&
-			    audioImporter.loopable == loopable &&
-			    audioImporter.threeD == threeD;
+			    audioImporter.optimizeSampleRate == optimizeSampleRate &&
+				audioImporter.overrideSampleRate == overrideSampleRate &&
+				audioImporter.quality == quality &&
+				audioImporter.sampleRate == sampleRate &&
+				audioImporter.preloadAudioData == preloadAudioData;
 	}
 	
 	public override void ReadFromAsset(Object asset) {
@@ -112,13 +151,14 @@ public class AudioAsset : Asset {
 		
 		guid = AssetDatabase.AssetPathToGUID(audioImporter.assetPath);
 		
-		compressionBitrate = audioImporter.compressionBitrate;
 		forceToMono = audioImporter.forceToMono;
 		format = audioImporter.format;
-	    hardware = audioImporter.hardware;
 	    loadType = audioImporter.loadType;
-	    loopable = audioImporter.loopable;
-	    threeD = audioImporter.threeD;
+		optimizeSampleRate = audioImporter.optimizeSampleRate;
+		overrideSampleRate = audioImporter.overrideSampleRate;
+		quality = audioImporter.quality;
+		sampleRate = audioImporter.sampleRate;
+		preloadAudioData = audioImporter.preloadAudioData;
 	}
 	
 	public override void DrawImportSettings() {
@@ -134,21 +174,20 @@ public class AudioAsset : Asset {
 			//Path
 			GUILayout.Label("Path: " + path);
 			
-			//Compression bitrate
-			GUILayout.Label("Compression Bitrate: " + compressionBitrate.ToString(), audioImporter.compressionBitrate != compressionBitrate ? AssetSettingsWindow.singleton.redTextStyle : EditorStyles.label);
-			//Force to mono
-			GUILayout.Label("Force to mono: " + forceToMono.ToString(), audioImporter.forceToMono != forceToMono ? AssetSettingsWindow.singleton.redTextStyle : EditorStyles.label);
-			//Format
-			GUILayout.Label("Format: " + format.ToString(), audioImporter.format != format ? AssetSettingsWindow.singleton.redTextStyle : EditorStyles.label);
-			//Hardware
-			GUILayout.Label("Hardware: " + hardware.ToString(), audioImporter.hardware != hardware ? AssetSettingsWindow.singleton.redTextStyle : EditorStyles.label);
-			//Load type
-			GUILayout.Label("Load type: " + loadType.ToString(), audioImporter.loadType != loadType ? AssetSettingsWindow.singleton.redTextStyle : EditorStyles.label);
-			//Loopable
-			GUILayout.Label("Loopable: " + loopable.ToString(), audioImporter.loopable != loopable ? AssetSettingsWindow.singleton.redTextStyle : EditorStyles.label);
-			//3D
-			GUILayout.Label("3D: " + threeD.ToString(), audioImporter.threeD != threeD ? AssetSettingsWindow.singleton.redTextStyle : EditorStyles.label);
+			DrawDiffHighlightLabel("Quality", quality, audioImporter.quality);
+			DrawDiffHighlightLabel("Force to Mono", forceToMono, audioImporter.forceToMono);
+			DrawDiffHighlightLabel("Format", format, audioImporter.format);
+			DrawDiffHighlightLabel("Load Type", loadType, audioImporter.loadType);
+			DrawDiffHighlightLabel("Optimize Sample Rate", optimizeSampleRate, audioImporter.optimizeSampleRate);
+			DrawDiffHighlightLabel("Override Sample Rate", overrideSampleRate, audioImporter.overrideSampleRate);
+			DrawDiffHighlightLabel("Sample Rate", sampleRate, audioImporter.sampleRate);
+			DrawDiffHighlightLabel("Preload Data", preloadAudioData, audioImporter.preloadAudioData);
 		}
+	}
+	
+	//Draws a label in a highlighted mode if the value differs from a reference value
+	private void DrawDiffHighlightLabel<T>(string fieldName, T value, T referenceValue) {
+		GUILayout.Label(fieldName + ": " + value.ToString(), !Equals(referenceValue, value) ? AssetSettingsWindow.singleton.redTextStyle : EditorStyles.label);
 	}
 	
 	public override void WriteToWriter(StreamWriter writer) {
@@ -165,14 +204,15 @@ public class AudioAsset : Asset {
 		writer.WriteLine(VerySimpleXml.StartNode(guidNodeName, 3) + guid + VerySimpleXml.EndNode(guidNodeName));
 		
 		//IMPORT SETTINGS
-		writer.WriteLine(VerySimpleXml.StartNode("compressionBitrate", 3) + compressionBitrate.ToString() + VerySimpleXml.EndNode("compressionBitrate"));
 		writer.WriteLine(VerySimpleXml.StartNode("forceToMono", 3) + forceToMono.ToString() + VerySimpleXml.EndNode("forceToMono"));
 		writer.WriteLine(VerySimpleXml.StartNode("format", 3) + format.ToString() + VerySimpleXml.EndNode("format"));
-		writer.WriteLine(VerySimpleXml.StartNode("hardware", 3) + hardware.ToString() + VerySimpleXml.EndNode("hardware"));
 		writer.WriteLine(VerySimpleXml.StartNode("loadType", 3) + loadType.ToString() + VerySimpleXml.EndNode("loadType"));
-		writer.WriteLine(VerySimpleXml.StartNode("loopable", 3) + loopable.ToString() + VerySimpleXml.EndNode("loopable"));
-		writer.WriteLine(VerySimpleXml.StartNode("threeD", 3) + threeD.ToString() + VerySimpleXml.EndNode("threeD"));
-		
+		writer.WriteLine(VerySimpleXml.StartNode("quality", 3) + quality.ToString() + VerySimpleXml.EndNode("quality"));
+		writer.WriteLine(VerySimpleXml.StartNode("optimizeSampleRate", 3) + optimizeSampleRate.ToString() + VerySimpleXml.EndNode("optimizeSampleRate"));
+		writer.WriteLine(VerySimpleXml.StartNode("overrideSampleRate", 3) + overrideSampleRate.ToString() + VerySimpleXml.EndNode("overrideSampleRate"));
+		writer.WriteLine(VerySimpleXml.StartNode("sampleRate", 3) + sampleRate.ToString() + VerySimpleXml.EndNode("sampleRate"));
+		writer.WriteLine(VerySimpleXml.StartNode("preloadAudioData", 3) + preloadAudioData.ToString() + VerySimpleXml.EndNode("preloadAudioData"));
+				
 		//End
 		writer.WriteLine(VerySimpleXml.EndNode(nodeName, 2));
 	}
@@ -182,37 +222,43 @@ public class AudioAsset : Asset {
 			AudioAsset otherAsset = asset as AudioAsset;
 			return this.name == otherAsset.name &&
 					this.guid == otherAsset.guid &&
-					this.compressionBitrate == otherAsset.compressionBitrate &&
 					this.forceToMono == otherAsset.forceToMono &&
 					this.format == otherAsset.format &&
-					this.hardware == otherAsset.hardware &&
 					this.loadType == otherAsset.loadType &&
-					this.loopable == otherAsset.loopable &&
-					this.threeD == otherAsset.threeD;
+					this.quality == otherAsset.quality &&
+					this.optimizeSampleRate == otherAsset.optimizeSampleRate &&
+					this.overrideSampleRate == otherAsset.overrideSampleRate &&
+					this.sampleRate == otherAsset.sampleRate &&
+					this.preloadAudioData == otherAsset.preloadAudioData;
 		} else {
 			return false;
 		}
 	}
 	
 	public override string[] GetAllPropertyNames() {
-		return new string[] {"compressionBitrate", "forceToMono", "format", "hardware", "loadType", "loopable", "threeD"};
+		return new string[] {"forceToMono", "format", "loadType", "quality", "optimizeSampleRate", "overrideSampleRate", "sampleRate", "preloadAudioData"};
 	}
 	
 	public override object[] GetAllPropertyValues() {
-		return new object[] {compressionBitrate, forceToMono, format, hardware, loadType, loopable, threeD};
+		return new object[] {forceToMono, format, loadType, quality, optimizeSampleRate, overrideSampleRate, sampleRate, preloadAudioData};
 	}
 	
 	public override void ApplyCopiedValues(string[] properties, object[] values) {
 		for(int i=0; i<properties.Length; i++) {
 			string property = properties[i];
 			
-			if(property == "compressionBitrate") { compressionBitrate = (int) values[i]; }
 			if(property == "forceToMono") { forceToMono = (bool) values[i]; }
-			if(property == "format") { format = (AudioImporterFormat) values[i]; }
-			if(property == "hardware") { hardware = (bool) values[i]; }
-			if(property == "loadType") { loadType = (AudioImporterLoadType) values[i]; }
-			if(property == "loopable") { loopable = (bool) values[i]; };
-			if(property == "threeD") { threeD = (bool) values[i]; }
+			if(property == "format") { format = (AudioClipFormat) values[i]; }
+			if(property == "loadType") { loadType = (AudioClipLoadType) values[i]; }
+			if(property == "quality") { quality = (float) values[i]; }
+			if(property == "optimizeSampleRate") { optimizeSampleRate = (bool) values[i]; }
+			if(property == "overrideSampleRate") { overrideSampleRate = (bool) values[i]; }
+			if(property == "sampleRate") { sampleRate = (float) values[i]; }
+			if(property == "preloadAudioData") { preloadAudioData = (bool) values[i]; }
 		}
+	}
+	
+	private void LogLegacyXMLWarning(string fieldName, string line){
+		Debug.LogWarning("Legacy field " + fieldName + " in XML for " + name + " import settings. Value was '" + VerySimpleXml.NodeValue(line, fieldName) + "'");
 	}
 }

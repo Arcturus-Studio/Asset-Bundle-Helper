@@ -230,7 +230,7 @@ public class PlatformSpecifics : MonoBehaviour {
 		if(materialPerPlatform != null) {
 			foreach(MaterialPerPlatform pair in materialPerPlatform) {
 				if (isCompatiblePlatform(platform, pair.platform)) {
-					renderer.sharedMaterial = pair.mat;
+					GetComponent<Renderer>().sharedMaterial = pair.mat;
 					break;
 				}
 			}
@@ -345,7 +345,7 @@ public class PlatformSpecifics : MonoBehaviour {
 				
 				// get object radius
 				float radius = 0;
-				if (renderer != null) radius = (renderer.bounds.max - renderer.bounds.min).magnitude * .5f;
+				if (GetComponent<Renderer>() != null) radius = (GetComponent<Renderer>().bounds.max - GetComponent<Renderer>().bounds.min).magnitude * .5f;
 				
 				// get new projected width and height
 				var screenSize = (topRight - bottomLeft);
@@ -392,7 +392,7 @@ public class PlatformSpecifics : MonoBehaviour {
 			foreach(FontPerPlatform pair in fontPerPlatform) {
 				if (isCompatiblePlatform(platform, pair.platform)) {
 					this.GetComponent<TextMesh>().font = pair.font;
-					renderer.sharedMaterial = pair.mat;
+					GetComponent<Renderer>().sharedMaterial = pair.mat;
 					break;
 				}
 			}

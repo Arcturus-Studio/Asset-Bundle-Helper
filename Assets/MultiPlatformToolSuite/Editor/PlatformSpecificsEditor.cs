@@ -251,25 +251,25 @@ public class PlatformSpecificsEditor : Editor {
 		materialsPerPlatform[index].mat = EditorGUILayout.ObjectField(materialsPerPlatform[index].mat, typeof(Material), false) as Material;
 		GUILayout.BeginHorizontal();
 			if(GUILayout.Button("Get")) {
-				if(specifics.renderer != null) {
+				if(specifics.GetComponent<Renderer>() != null) {
 					#if UNITY_4_0 || UNITY_4_1 || UNITY_4_2
 					Undo.RegisterUndo(specifics, "get material");
 					#else
 					Undo.RecordObject(specifics, "get material");
 					#endif
-					materialsPerPlatform[index].mat = specifics.renderer.sharedMaterial;
+					materialsPerPlatform[index].mat = specifics.GetComponent<Renderer>().sharedMaterial;
 				} else {
 					Debug.Log("There is no Renderer component on this game object.");
 				}
 			}
 			if(GUILayout.Button("Set")) {
-				if(specifics.renderer != null) {
+				if(specifics.GetComponent<Renderer>() != null) {
 					#if UNITY_4_0 || UNITY_4_1 || UNITY_4_2
 					Undo.RegisterUndo(specifics.renderer, "set material");
 					#else
-					Undo.RecordObject(specifics.renderer, "set material");
+					Undo.RecordObject(specifics.GetComponent<Renderer>(), "set material");
 					#endif
-					specifics.renderer.sharedMaterial = materialsPerPlatform[index].mat;
+					specifics.GetComponent<Renderer>().sharedMaterial = materialsPerPlatform[index].mat;
 				} else {
 					Debug.Log("There is no Renderer component on this game object.");
 				}
@@ -522,30 +522,30 @@ public class PlatformSpecificsEditor : Editor {
 			GUILayout.Space(20f);
 			if(GUILayout.Button("Get")) {
 				TextMesh textMesh = specifics.GetComponent<TextMesh>();
-				if(textMesh != null && specifics.renderer != null) {
+				if(textMesh != null && specifics.GetComponent<Renderer>() != null) {
 					#if UNITY_4_0 || UNITY_4_1 || UNITY_4_2
 					Undo.RegisterUndo(specifics, "get font and material");
 					#else
 					Undo.RecordObject(specifics, "get font and material");
 					#endif
 					fontsPerPlatform[index].font = textMesh.font;
-					fontsPerPlatform[index].mat = specifics.renderer.sharedMaterial;
+					fontsPerPlatform[index].mat = specifics.GetComponent<Renderer>().sharedMaterial;
 				} else {
 					Debug.Log("There is no TextMesh or Renderer component on this game object.");
 				}
 			}
 			if(GUILayout.Button("Set")) {
 				TextMesh textMesh = specifics.GetComponent<TextMesh>();
-				if(textMesh != null && specifics.renderer != null) {
+				if(textMesh != null && specifics.GetComponent<Renderer>() != null) {
 					#if UNITY_4_0 || UNITY_4_1 || UNITY_4_2
 					Undo.RegisterUndo(textMesh, "set font");
 					Undo.RegisterUndo(specifics.renderer, "set material");
 					#else
 					Undo.RecordObject(textMesh, "set font");
-					Undo.RecordObject(specifics.renderer, "set material");
+					Undo.RecordObject(specifics.GetComponent<Renderer>(), "set material");
 					#endif
 					textMesh.font = fontsPerPlatform[index].font;
-					specifics.renderer.sharedMaterial = fontsPerPlatform[index].mat;
+					specifics.GetComponent<Renderer>().sharedMaterial = fontsPerPlatform[index].mat;
 				} else {
 					Debug.Log("There is no TextMesh or Renderer component on this game object.");
 				}

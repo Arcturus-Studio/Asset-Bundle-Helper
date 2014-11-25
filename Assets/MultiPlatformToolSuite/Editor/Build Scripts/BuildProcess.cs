@@ -75,12 +75,6 @@ public class BuildProcess : ScriptableObject
 	static string androidBuildName = genericBuildName;
 	static string androidProductName = genericProductName;
 	
-	static string flashPlayerBuildName = genericBuildName + ".swf";
-	static string flashPlayerProductName = genericProductName;
-	
-	static string naClBuildName = genericBuildName;
-	static string naClProductName = genericProductName;
-	
 	#if !UNITY_4_0 && !UNITY_4_1
 	static string winPhoneBuildName = genericBuildName;
 	static string winPhoneProductName = genericProductName;
@@ -110,8 +104,6 @@ public class BuildProcess : ScriptableObject
 		iPadBuildName = genericBuildName;
 		iOSBuildName = genericBuildName;
 		androidBuildName = genericBuildName;
-		flashPlayerBuildName = genericBuildName + ".swf";
-		naClBuildName = genericBuildName;
 		#if !UNITY_4_0 && !UNITY_4_1
 		winPhoneBuildName = genericBuildName;
 		windows8BuildName = genericBuildName;
@@ -132,8 +124,6 @@ public class BuildProcess : ScriptableObject
 		iPadProductName = genericProductName;
 		iOSProductName = genericProductName;
 		androidProductName = genericProductName;
-		flashPlayerProductName = genericProductName;
-		naClProductName = genericProductName;
 		#if !UNITY_4_0 && !UNITY_4_1
 		winPhoneProductName = genericProductName;
 		windows8ProductName = genericProductName;
@@ -210,20 +200,6 @@ public class BuildProcess : ScriptableObject
 		PlatformSpecificChanges (Platform.Android);
 		BuildAndroid (false, androidBuildName, androidProductName);
 	}
-
-	[MenuItem("Window/MultiPlatform ToolKit/Build/Build FlashPlayer", false, 1)]
-	public static void BuildNonDebugFlashPlayer ()
-	{
-		PlatformSpecificChanges (Platform.FlashPlayer);
-		BuildFlashPlayer (false, flashPlayerBuildName, flashPlayerProductName);
-	}
-	
-	[MenuItem("Window/MultiPlatform ToolKit/Build/Build NaCl", false, 1)]
-	public static void BuildNonDebugNaCl ()
-	{
-		PlatformSpecificChanges (Platform.NaCl);
-		BuildNaCl (false, naClBuildName, naClProductName);
-	}
 	
 #if !UNITY_4_0 && !UNITY_4_1
 	[MenuItem("Window/MultiPlatform ToolKit/Build/Build WP8", false, 1)]
@@ -278,21 +254,7 @@ public class BuildProcess : ScriptableObject
 		PlatformSpecificChanges (Platform.Android);
 		BuildAndroid (true,androidBuildName, androidProductName);
 	}
-
-	[MenuItem("Window/MultiPlatform ToolKit/Build/Debug/Build FlashPlayer", false, 1)]
-	public static void BuildDebugFlashPlayer ()
-	{
-		PlatformSpecificChanges (Platform.FlashPlayer);
-		BuildFlashPlayer (true,flashPlayerBuildName, flashPlayerProductName);
-	}
 	
-	[MenuItem("Window/MultiPlatform ToolKit/Build/Debug/Build NaCl", false, 1)]
-	public static void BuildDebugNaCl ()
-	{
-		PlatformSpecificChanges (Platform.NaCl);
-		BuildNaCl (true,naClBuildName, naClProductName);
-	}
-
 #if !UNITY_4_0 && !UNITY_4_1
 	[MenuItem("Window/MultiPlatform ToolKit/Build/Debug/Build WP8", false, 1)]
 	public static void BuildDebugWinPhone ()
@@ -392,7 +354,7 @@ public class BuildProcess : ScriptableObject
 	public static void BuildiPhone (bool debug, string buildName, string productName)
 	{
 		string buildPath = GetBuildDirectory ().FullName + delim + buildName;
-		BuildTarget target = BuildTarget.iPhone;
+		BuildTarget target = BuildTarget.iOS;
 		PlayerSettings.productName = productName;
 		PlayerSettings.iOS.targetDevice = iOSTargetDevice.iPhoneOnly;
 		PlayerSettings.iOS.targetResolution = iOSTargetResolution.Native;
@@ -423,7 +385,7 @@ public class BuildProcess : ScriptableObject
 		
 		//Currently we've configured this example project to create separate iPad builds from iPhone builds 
 		//instead of a universal build
-		BuildTarget target = BuildTarget.iPhone;
+		BuildTarget target = BuildTarget.iOS;
 		//iPhone here really means 'iOS'
 		PlayerSettings.productName = productName;
 		//product name should have been set above!
@@ -471,7 +433,7 @@ public class BuildProcess : ScriptableObject
 		
 		//Currently we've configured this example project to create separate iPad builds from iPhone builds 
 		//instead of a universal build
-		BuildTarget target = BuildTarget.iPhone;
+		BuildTarget target = BuildTarget.iOS;
 		//iPhone here really means 'iOS'
 		PlayerSettings.productName = productName;
 		//product name should have been set above!
@@ -542,59 +504,6 @@ public class BuildProcess : ScriptableObject
 		
 		RevertScenes ();
 	}
-
-	public static void BuildFlashPlayer (bool debug, string buildName, string productName)
-	{
-		string buildPath = GetBuildDirectory ().FullName + delim + buildName;
-		BuildTarget target = BuildTarget.FlashPlayer;
-		PlayerSettings.productName = productName;
-		//More flash-specific player settings coming soon in the final v3.5!
-		
-		//You may choose to pre-process your Flash build here.
-		
-		if (!debug)
-			err = BuildPipeline.BuildPlayer (levels, buildPath, target, ManualBuildOptions);
-		else
-			err = BuildPipeline.BuildPlayer (levels, buildPath, target, BuildOptions.Development | BuildOptions.ConnectWithProfiler | ManualBuildOptions);
-		
-		if (err != string.Empty) {
-			Debug.Log (err);
-		} else {
-			//You may choose to post-process your Flash build here.
-		}
-		
-		RevertScenes ();
-	}
-	
-	public static void BuildNaCl (bool debug, string buildName, string productName)
-	{
-		string buildPath = GetBuildDirectory ().FullName + delim + buildName;
-		BuildTarget target = BuildTarget.NaCl;
-		PlayerSettings.productName = productName;
-		
-		//offline testing support
-		//=====
-		//CHANGE ME when you want to disable offline deployment
-		//=====
-		EditorUserBuildSettings.webPlayerOfflineDeployment = true;
-	
-		//You may choose to pre-process your NaCl build here.
-		
-		//You may choose to pre-process your NaCl build here.
-
-		if (!debug)
-			err = BuildPipeline.BuildPlayer (levels, buildPath, target, ManualBuildOptions);
-		else
-			err = BuildPipeline.BuildPlayer (levels, buildPath, target, BuildOptions.Development | BuildOptions.ConnectWithProfiler | ManualBuildOptions);
-		
-		if (err != string.Empty) {
-			Debug.Log (err);
-		} else {
-			//You may choose to post-process your NaCl build here.
-		}
-		
-		RevertScenes ();
-	}
 	
 #if !UNITY_4_0 && !UNITY_4_1
 	public static void BuildWinPhone (bool debug, string buildName, string productName)
@@ -642,7 +551,7 @@ public class BuildProcess : ScriptableObject
 		//BuildTarget target = BuildTarget.MetroPlayer;
 		//BuildTarget target = BuildTarget.MetroPlayerX64;
 		//BuildTarget target = BuildTarget.WP8Player
-		BuildTarget target = BuildTarget.MetroPlayer;
+		BuildTarget target = BuildTarget.WSAPlayer;
 		
 		//then set this to true!
 		bool doWinBuild = false;

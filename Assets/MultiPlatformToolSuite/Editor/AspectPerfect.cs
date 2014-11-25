@@ -31,7 +31,7 @@ public class AspectPerfect : ScriptableObject {
 			Debug.Log("No transform selected.");
 			return;
 		}
-		Texture2D tex = selectedT.renderer.sharedMaterial.mainTexture as Texture2D;
+		Texture2D tex = selectedT.GetComponent<Renderer>().sharedMaterial.mainTexture as Texture2D;
 		float xScale = (unityFullScreenPlaneScale.x / unityScreenResolution.x) * tex.width;
 		float yScale = (unityFullScreenPlaneScale.y / unityScreenResolution.y) * tex.height;
 		selectedT.localScale = widthAxis * xScale + heightAxis * yScale + depthAxis;

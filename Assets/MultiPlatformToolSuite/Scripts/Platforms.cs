@@ -93,12 +93,6 @@ public class Platforms : MonoBehaviour {
 				else if(Application.platform == RuntimePlatform.Android) { 
 					calculatedPlatform = Platform.Android; //exact screen size will be calculated per-Aspect Ratio
 				} 
-				else if(Application.platform == RuntimePlatform.FlashPlayer) { 
-					calculatedPlatform = Platform.FlashPlayer; //exact screen size will be calculated per-Aspect Ratio
-				} 
-				else if(Application.platform == RuntimePlatform.NaCl) { 
-					calculatedPlatform = Platform.NaCl; //exact screen size will be calculated per-Aspect Ratio
-				} 
 				else if(Application.platform == RuntimePlatform.WindowsWebPlayer || Application.platform == RuntimePlatform.OSXWebPlayer) {
 					calculatedPlatform = Platform.WebPlayer; //exact screen size will be calculated per-Aspect Ratio 
 				}
@@ -123,7 +117,10 @@ public class Platforms : MonoBehaviour {
 				else if(Application.platform == RuntimePlatform.WP8Player) {
 					calculatedPlatform = Platform.WP8; //exact screen size will be calculated per-Aspect Ratio
 				}
-				else if(Application.platform == RuntimePlatform.MetroPlayerARM || Application.platform == RuntimePlatform.MetroPlayerX86 || Application.platform == RuntimePlatform.MetroPlayerX64) {
+				else if(Application.platform == RuntimePlatform.WSAPlayerARM
+					|| Application.platform == RuntimePlatform.WSAPlayerX86
+					|| Application.platform == RuntimePlatform.WSAPlayerX64
+				) {
 					calculatedPlatform = Platform.Windows8; //exact screen size will be calculated per-Aspect Ratio
 				}		
 #endif
