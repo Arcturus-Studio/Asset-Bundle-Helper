@@ -3,9 +3,35 @@ using UnityEditor;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
+using Type = System.Type;
 
 [CustomEditor (typeof(PlatformSpecifics))]
 public class PlatformSpecificsEditor : Editor {
+	
+	class FieldSelectOption{
+		public Component component;
+		public string fieldName;
+		public Type fieldType;
+		
+		public FieldSelectOption(Component comp, FieldInfo field){
+			component = comp;
+			fieldName = field.Name;
+			fieldType = field.FieldType;
+		}
+		
+		public FieldSelectOption(Component comp, PropertyInfo property){
+			component = comp;
+			fieldName = property.Name;
+			fieldType = property.PropertyType;
+		}
+		
+		public string MenuPath{
+			get{
+				return component.GetType().Name + "/" + fieldName;
+			}
+		}
+	}
 	
 	public Texture2D addTextureUp;
 	public Texture2D addTextureDown;
@@ -37,6 +63,7 @@ public class PlatformSpecificsEditor : Editor {
 	bool showAnchorPositions = false;
 	bool showFonts = false;
 	bool showTextMeshText = false;
+	bool showFieldValues = false;
 	
 	void OnEnable() {
 		GetAssetPaths();
@@ -72,6 +99,7 @@ public class PlatformSpecificsEditor : Editor {
 		showAnchorPositions = (specifics.anchorPositions != null && specifics.anchorPositions.Length > 0);
 		showFonts = (specifics.fontPerPlatform != null && specifics.fontPerPlatform.Length > 0);
 		showTextMeshText = (specifics.textMeshTextPerPlatform != null && specifics.textMeshTextPerPlatform.Length > 0);
+		showFieldValues = (specifics.fieldValuePerPlatform != null && specifics.fieldValuePerPlatform.Length > 0);
 	}
 	
 	void GetAssetPaths()
@@ -198,6 +226,16 @@ public class PlatformSpecificsEditor : Editor {
 		ref specifics.textMeshTextPerPlatform,
 		DrawTextMeshText<PlatformSpecifics.TextMeshTextPerPlatform>,
 		() => {return new PlatformSpecifics.TextMeshTextPerPlatform(Platform.Standalone, string.Empty);}, true);
+		
+		//Draw field value per platform
+		DrawSection<PlatformSpecifics.FieldValuePerPlatform>(
+			ref showFieldValues,
+			"Field values",
+			ref specifics.fieldValuePerPlatform,
+			DrawFieldValues<PlatformSpecifics.FieldValuePerPlatform>,
+			() => {return new PlatformSpecifics.FieldValuePerPlatform(Platform.Standalone, null, string.Empty, null);},
+			true
+		);
 	}
 	
 	void DrawRestrictToPlatforms<T>(int index, ref T[] array, ref int itemToDelete, ref int moveItemIdx, ref int moveItemDirection) {
@@ -551,6 +589,110 @@ public class PlatformSpecificsEditor : Editor {
 		GUILayout.EndHorizontal();
 	}
 	
+	Rect lastDropdownRect; //TODO: needs to work with multiple platform specific values
+	
+	void DrawFieldValues<T>(int index, ref T[] array, ref int deleteIndex, ref int moveIndex, ref int moveDirection){
+		PlatformSpecifics.FieldValuePerPlatform[] fieldValuePerPlatform = array as PlatformSpecifics.FieldValuePerPlatform[];
+		DrawPlatformEnum(index, ref deleteIndex, ref moveIndex, ref moveDirection, ref fieldValuePerPlatform[index].platform);
+		PlatformSpecifics.FieldValuePerPlatform fieldSetter = fieldValuePerPlatform[index];
+				
+		GUILayout.Space(10f);
+		GUILayout.BeginHorizontal();	
+
+		//Draw button
+		string buttonLabel;
+		bool fieldSelected = !string.IsNullOrEmpty(fieldSetter.componentTypeName) && !string.IsNullOrEmpty(fieldSetter.fieldName);
+		if(!fieldSelected){
+			buttonLabel = "No Field";
+		}
+		else{
+			buttonLabel = fieldSetter.componentTypeName + "." + fieldSetter.fieldName;
+		}		
+		bool buttonPressed = GUILayout.Button(buttonLabel, EditorStyles.popup);
+		if(Event.current.type == EventType.Repaint){
+			lastDropdownRect = GUILayoutUtility.GetLastRect();
+		}
+		GUILayout.EndHorizontal();
+		
+		//Draw value field
+		if(fieldSelected){
+			SerializedObject serObj = new SerializedObject(specifics);
+			SerializedProperty valueSet = serObj.FindProperty("fieldValuePerPlatform").GetArrayElementAtIndex(index).FindPropertyRelative("fieldValue");
+			SerializedProperty fieldValue = valueSet.FindPropertyRelative(fieldSetter.fieldValue.GetValueFieldName());
+			EditorGUILayout.PropertyField(fieldValue);
+			//Clear obj reference value and warn if not assignable to target
+			Type componentType = specifics.GetComponent(fieldSetter.componentTypeName).GetType();			
+			if(fieldValue.objectReferenceValue != null
+				&& !IsValidObjectAssignment(
+					fieldValue.objectReferenceValue,
+					componentType,
+					fieldSetter.fieldName)
+			){
+				Debug.LogWarning("Cannot convert type "
+					+ fieldValue.objectReferenceValue.GetType().Name
+					+ " to target type "
+					+ TargetFieldOrPropertyType(componentType, fieldSetter.fieldName)
+				);
+				fieldValue.objectReferenceValue = null;
+				
+			}
+			serObj.ApplyModifiedProperties();
+			
+		}
+		
+		//Handle button press
+		if(buttonPressed){
+			//Gather dropdown options
+			Component[] components = specifics.gameObject.GetComponents<Component>();
+			List<FieldSelectOption> dropDownOptions = new List<FieldSelectOption>();
+			foreach(Component comp in components){
+				//Fields
+				FieldInfo[] publicFields = comp.GetType().GetFields(BindingFlags.Public | BindingFlags.Instance);
+				foreach(FieldInfo field in publicFields){
+					if(PlatformSpecificFieldValue.IsValidType(field.FieldType)){
+						dropDownOptions.Add(new FieldSelectOption(comp, field));
+					}
+				}
+				
+				//Properties
+				PropertyInfo[] publicProperties = comp.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance);
+				foreach(PropertyInfo property in publicProperties){
+					if(property.CanWrite && PlatformSpecificFieldValue.IsValidType(property.PropertyType)){
+						dropDownOptions.Add(new FieldSelectOption(comp, property));
+					}
+				}
+			}
+			
+			//Construct menu			
+			GenericMenu menu = new GenericMenu();
+			//On-select action
+			GenericMenu.MenuFunction2 assignSelection = (object x) => {
+				FieldSelectOption option = (FieldSelectOption)x;
+				if(option == null){
+					fieldSetter.componentTypeName = "";
+					fieldSetter.fieldName = "";
+					fieldSetter.fieldValue = new PlatformSpecificFieldValue();
+				}
+				else{
+					fieldSetter.componentTypeName = option.component.GetType().Name;
+					fieldSetter.fieldName = option.fieldName;
+					fieldSetter.fieldValue = new PlatformSpecificFieldValue(option.fieldType);
+				}
+			};
+			//Add constant menu items
+			menu.AddItem(new GUIContent("No Field"), false, assignSelection, null);
+			if(dropDownOptions.Count > 0){
+				menu.AddSeparator("");
+			}
+			//Add dynamic menu items
+			foreach(FieldSelectOption option in dropDownOptions){
+				menu.AddItem(new GUIContent(option.MenuPath), buttonLabel.Replace(".", "/") == option.MenuPath, assignSelection, option);
+			}
+			//Show menu
+			menu.DropDown(lastDropdownRect);
+		}
+	}
+	
 	void DrawSection<T>(ref bool show, string header, ref T[] array, DrawArray<T> drawArray, Constructor<T> construct, bool drawAddButton) {
 		show = EditorGUILayout.Foldout(show, header);
 		
@@ -651,5 +793,28 @@ public class PlatformSpecificsEditor : Editor {
 	
 	void OnDisable() {
 		specifics = null;
+	}
+	
+	//Helper function for platform-specific field values
+	bool IsValidObjectAssignment(Object obj, Type componentType, string fieldName){
+		if(obj == null){
+			return true;
+		}
+		
+		Type targetType = TargetFieldOrPropertyType(componentType, fieldName);
+		return targetType != null && targetType.IsAssignableFrom(obj.GetType());
+	}
+	
+	//Helper function for platform-specific field values
+	Type TargetFieldOrPropertyType(Type componentType, string fieldName){
+		FieldInfo field = componentType.GetField(fieldName, BindingFlags.Public | BindingFlags.Instance);
+		if(field != null){
+			return field.FieldType;
+		}
+		PropertyInfo property = componentType.GetProperty(fieldName, BindingFlags.Public | BindingFlags.Instance);
+		if(property != null){
+			return property.PropertyType;
+		}
+		return null;
 	}
 }

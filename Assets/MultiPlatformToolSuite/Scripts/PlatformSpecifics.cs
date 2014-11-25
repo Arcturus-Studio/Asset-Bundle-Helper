@@ -3,6 +3,9 @@ using System.Collections;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
+#if !UNITY_METRO
+using System.Reflection;
+#endif
 
 public enum HorizontalAlignments
 {
@@ -129,6 +132,22 @@ public class PlatformSpecifics : MonoBehaviour {
 	}
 	public TextMeshTextPerPlatform[] textMeshTextPerPlatform;
 	
+	[System.Serializable]
+	public class FieldValuePerPlatform {
+		public Platform platform;
+		public string componentTypeName;
+		public string fieldName;
+		public PlatformSpecificFieldValue fieldValue;
+		
+		public FieldValuePerPlatform(Platform _platform, string _componentType, string _fieldName, PlatformSpecificFieldValue _fieldValue){
+			platform = _platform;
+			componentTypeName = _componentType;
+			fieldName = _fieldName;
+			fieldValue = _fieldValue;
+		}
+	}
+	public FieldValuePerPlatform[] fieldValuePerPlatform;
+	
 	#if UNITY_EDITOR
 	public static bool UseEditorApplyMode;
 	#endif
@@ -148,6 +167,7 @@ public class PlatformSpecifics : MonoBehaviour {
 		if(anchorPositions == null) anchorPositions = new AnchorPosition[0];
 		if(fontPerPlatform == null) fontPerPlatform = new FontPerPlatform[0];
 		if(textMeshTextPerPlatform == null) textMeshTextPerPlatform = new TextMeshTextPerPlatform[0];
+		if(fieldValuePerPlatform == null) fieldValuePerPlatform = new FieldValuePerPlatform[0];
 	}
 	
 	private bool isCompatiblePlatform(Platform platform1, Platform platform2) {
@@ -171,6 +191,7 @@ public class PlatformSpecifics : MonoBehaviour {
 		ApplyLocalPosition(platform);
 		ApplyFont(platform);
 		ApplyTextMeshText(platform);
+		ApplyFieldValue(platform);
 	}
 	
 	public bool ApplyRestrictPlatform(Platform platform) {
@@ -387,5 +408,30 @@ public class PlatformSpecifics : MonoBehaviour {
 				}
 			}
 		}
+	}
+	
+	public void ApplyFieldValue(Platform platform){
+#if !UNITY_METRO
+		if(fieldValuePerPlatform != null){
+			foreach(FieldValuePerPlatform pair in fieldValuePerPlatform){
+				if(isCompatiblePlatform(platform, pair.platform) && !string.IsNullOrEmpty(pair.componentTypeName) && !string.IsNullOrEmpty(pair.fieldName)) {
+					Component component = GetComponent(pair.componentTypeName);
+					if(component != null){
+						FieldInfo field = component.GetType().GetField(pair.fieldName, BindingFlags.Instance | BindingFlags.Public);
+						if(field != null){
+							field.SetValue(component, pair.fieldValue.GetValue());
+							continue;
+						}
+						PropertyInfo property = component.GetType().GetProperty(pair.fieldName, BindingFlags.Instance | BindingFlags.Public);
+						if(property != null){
+							property.SetValue(component, pair.fieldValue.GetValue(), null);
+							continue;
+						}
+						Debug.LogError("No public field or property " + pair.fieldName + " on component " + component, component);
+					}	
+				}
+			}
+		}
+#endif
 	}
 }
