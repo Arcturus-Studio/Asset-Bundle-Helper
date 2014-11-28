@@ -50,24 +50,11 @@ public class AssetBundleEditorSettings : ScriptableObject {
 		
 		tagGroups = new BundleTagGroup[0];
 		bundleDirectoryRelativeToProjectFolder = "Bundles";
-		
-		deleteButtonStyle = new GUIStyle();
-		deleteButtonStyle.normal.background = GetEditorTexture("del.png");
-		addButtonStyle = new GUIStyle();
-		addButtonStyle.normal.background = GetEditorTexture("add.png");
-		
-		uncheckedbox = GetEditorTexture("unchecked_checkbox.png");
-		checkedBox = GetEditorTexture("checked_checkbox.png");
-		outOfDate = GetEditorTexture("clock.png");
 	}
 	
 	public BundlePlatform[] platforms; //User-defined set of platforms
 	public BundleTagGroup[] tagGroups; //User-defined set of tag groups
 	public string bundleDirectoryRelativeToProjectFolder; //User-defined, project-relative path to directory where asset bundles should be kept.
-	//GUI style definitions and asset links for use in editors/inspectors
-	public GUIStyle deleteButtonStyle;
-	public GUIStyle addButtonStyle;
-	public Texture2D uncheckedbox, checkedBox, outOfDate;
 
 	//Returns bundle platforms applicable to the current build target.
 	public List<BundlePlatform> GetPlatformsForCurrentBuildTarget(BuildTarget target){
@@ -119,11 +106,6 @@ public class AssetBundleEditorSettings : ScriptableObject {
 	private void OnValidate(){
 		//Keep runtime tag groups in sync with editor settings
 		AssetBundleRuntimeSettings.TagGroups = PlatformAndTagGroups;
-	}
-	
-	//Helper function for fetching a texture from the ABH editor textures directory
-	private Texture2D GetEditorTexture(string texturePath){
-		return AssetDatabase.LoadMainAssetAtPath(Path.Combine(DirectoryPath, "EditorTextures/" + texturePath)) as Texture2D;
 	}
 #endif
 }

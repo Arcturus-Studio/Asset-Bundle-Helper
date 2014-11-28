@@ -21,6 +21,16 @@ public class AssetBundleListingEditor : Editor {
 	}
 	static AssetBundleEditorSettings settings;
 	
+	public static AssetBundleEditorUIResources UIResources{
+		get{
+			if(uiResources == null){
+				uiResources = AssetBundleEditorUIResources.GetInstance();
+			}
+			return uiResources;
+		}
+	}
+	static AssetBundleEditorUIResources uiResources;
+	
 	//Returns the path of the directory of the selected asset, or the path of the selected directory if the selection is a directory.
 	private static string FolderPathFromSelection(){
 		var selection = Selection.GetFiltered(typeof(Object),SelectionMode.Assets);
@@ -202,7 +212,7 @@ public class AssetBundleListingEditor : Editor {
 			GUILayout.EndHorizontal();
 			GUILayout.FlexibleSpace();
 			//Delete entry button
-			if(GUILayout.Button("",Settings.deleteButtonStyle)){
+			if(GUILayout.Button("", UIResources.deleteButtonStyle)){
 				toRemove.Add(entry);
 			}
 			GUILayout.Space(2);
@@ -211,7 +221,7 @@ public class AssetBundleListingEditor : Editor {
 		//New entry button
 		GUILayout.BeginHorizontal();
 		GUILayout.FlexibleSpace();
-		if(GUILayout.Button("",Settings.addButtonStyle)){
+		if(GUILayout.Button("", UIResources.addButtonStyle)){
 			var newEntry = new ListingEditorEntry();
 			newEntry.defaultTagString = BundleTagUtils.BuildTagString(listing.SelectedTagGroups.Select(x => x.tags.FirstOrDefault()));
 			assets.Add(newEntry);
