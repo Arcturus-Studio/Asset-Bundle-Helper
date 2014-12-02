@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 #if UNITY_EDITOR
 using UnityEditor;
 #endif
@@ -133,20 +134,66 @@ public class PlatformSpecifics : MonoBehaviour {
 	public TextMeshTextPerPlatform[] textMeshTextPerPlatform;
 	
 	[System.Serializable]
-	public class FieldValuePerPlatform {
+	public class FieldValuesPerPlatform {
 		public Platform platform;
+		public List<FieldValueOverride> values = new List<FieldValueOverride>();
+		
+		public FieldValuesPerPlatform(Platform _platform){
+			platform = _platform;
+		}
+		
+		public void AddNew(){
+			values.Add(new FieldValueOverride());
+		}
+		
+		public void RemoveAt(int index){
+			values.RemoveAt(index);
+		}
+		
+		public void ApplyValues(GameObject target){
+			foreach(FieldValueOverride valueOverride in values){
+				if(valueOverride != null && valueOverride.ValidTarget){
+					valueOverride.ApplyValue(target);
+				}
+			}
+		}		
+	}
+	public FieldValuesPerPlatform[] fieldValuesPerPlatform;
+	
+	[System.Serializable]
+	public class FieldValueOverride{
 		public string componentTypeName;
 		public string fieldName;
 		public PlatformSpecificFieldValue fieldValue;
 		
-		public FieldValuePerPlatform(Platform _platform, string _componentType, string _fieldName, PlatformSpecificFieldValue _fieldValue){
-			platform = _platform;
-			componentTypeName = _componentType;
-			fieldName = _fieldName;
-			fieldValue = _fieldValue;
+		public bool ValidTarget{
+			get{
+				return !string.IsNullOrEmpty(componentTypeName) && !string.IsNullOrEmpty(fieldName);
+			}
+		}
+		
+		public void ApplyValue(GameObject target){
+#if !UNITY_METRO
+			Component component = target.GetComponent(componentTypeName);
+			if(component != null){
+				FieldInfo field = component.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.Public);
+				if(field != null){
+					field.SetValue(component, fieldValue.GetValue());
+					return;
+				}
+				PropertyInfo property = component.GetType().GetProperty(fieldName, BindingFlags.Instance | BindingFlags.Public);
+				if(property != null){
+					property.SetValue(component, fieldValue.GetValue(), null);
+					return;
+				}
+				Debug.LogError("No public field or property " + fieldName + " on component " + component, component);
+			}
+#else
+			//TODO: Add WSA support
+			Debug.LogError("Field value overrides not supported in WSA");
+#endif
 		}
 	}
-	public FieldValuePerPlatform[] fieldValuePerPlatform;
 	
 	#if UNITY_EDITOR
 	public static bool UseEditorApplyMode;
@@ -167,12 +214,18 @@ public class PlatformSpecifics : MonoBehaviour {
 		if(anchorPositions == null) anchorPositions = new AnchorPosition[0];
 		if(fontPerPlatform == null) fontPerPlatform = new FontPerPlatform[0];
 		if(textMeshTextPerPlatform == null) textMeshTextPerPlatform = new TextMeshTextPerPlatform[0];
-		if(fieldValuePerPlatform == null) fieldValuePerPlatform = new FieldValuePerPlatform[0];
+		if(fieldValuesPerPlatform == null) fieldValuesPerPlatform = new FieldValuesPerPlatform[0];
 	}
 	
 	private bool isCompatiblePlatform(Platform platform1, Platform platform2) {
 		if (Platforms.IsiOSPlatform(platform1) && platform2 == Platform.iOS) return true;
 		else return (platform1 == platform2);
+	}
+	
+	public bool PlatformSupportsFieldOverrides(Platform platform){
+		//Due to restrictions on use of reflection in Windows Store Apps,
+		//Field overrides are currently not supported on that platform.
+		return platform != Platform.Windows8;
 	}
 	
 	public void ApplySpecifics(Platform platform) {
@@ -191,7 +244,7 @@ public class PlatformSpecifics : MonoBehaviour {
 		ApplyLocalPosition(platform);
 		ApplyFont(platform);
 		ApplyTextMeshText(platform);
-		ApplyFieldValue(platform);
+		ApplyFieldValues(platform);
 	}
 	
 	public bool ApplyRestrictPlatform(Platform platform) {
@@ -410,28 +463,14 @@ public class PlatformSpecifics : MonoBehaviour {
 		}
 	}
 	
-	public void ApplyFieldValue(Platform platform){
-#if !UNITY_METRO
-		if(fieldValuePerPlatform != null){
-			foreach(FieldValuePerPlatform pair in fieldValuePerPlatform){
-				if(isCompatiblePlatform(platform, pair.platform) && !string.IsNullOrEmpty(pair.componentTypeName) && !string.IsNullOrEmpty(pair.fieldName)) {
-					Component component = GetComponent(pair.componentTypeName);
-					if(component != null){
-						FieldInfo field = component.GetType().GetField(pair.fieldName, BindingFlags.Instance | BindingFlags.Public);
-						if(field != null){
-							field.SetValue(component, pair.fieldValue.GetValue());
-							continue;
-						}
-						PropertyInfo property = component.GetType().GetProperty(pair.fieldName, BindingFlags.Instance | BindingFlags.Public);
-						if(property != null){
-							property.SetValue(component, pair.fieldValue.GetValue(), null);
-							continue;
-						}
-						Debug.LogError("No public field or property " + pair.fieldName + " on component " + component, component);
-					}	
-				}
+	public void ApplyFieldValues(Platform platform){
+		if(fieldValuesPerPlatform != null){
+			foreach(FieldValuesPerPlatform pair in fieldValuesPerPlatform){
+				if(isCompatiblePlatform(platform, pair.platform)) {
+					pair.ApplyValues(gameObject);
+					break;
+				}				
 			}
 		}
-#endif
 	}
 }

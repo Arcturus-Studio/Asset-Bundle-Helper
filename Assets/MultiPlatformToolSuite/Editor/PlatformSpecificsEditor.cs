@@ -64,6 +64,7 @@ public class PlatformSpecificsEditor : Editor {
 	bool showFonts = false;
 	bool showTextMeshText = false;
 	bool showFieldValues = false;
+	Rect[][] lastFieldDropdownRects;
 	
 	void OnEnable() {
 		GetAssetPaths();
@@ -99,7 +100,7 @@ public class PlatformSpecificsEditor : Editor {
 		showAnchorPositions = (specifics.anchorPositions != null && specifics.anchorPositions.Length > 0);
 		showFonts = (specifics.fontPerPlatform != null && specifics.fontPerPlatform.Length > 0);
 		showTextMeshText = (specifics.textMeshTextPerPlatform != null && specifics.textMeshTextPerPlatform.Length > 0);
-		showFieldValues = (specifics.fieldValuePerPlatform != null && specifics.fieldValuePerPlatform.Length > 0);
+		showFieldValues = (specifics.fieldValuesPerPlatform != null && specifics.fieldValuesPerPlatform.Length > 0);
 	}
 	
 	void GetAssetPaths()
@@ -228,12 +229,12 @@ public class PlatformSpecificsEditor : Editor {
 		() => {return new PlatformSpecifics.TextMeshTextPerPlatform(Platform.Standalone, string.Empty);}, true);
 		
 		//Draw field value per platform
-		DrawSection<PlatformSpecifics.FieldValuePerPlatform>(
+		DrawSection<PlatformSpecifics.FieldValuesPerPlatform>(
 			ref showFieldValues,
 			"Field values",
-			ref specifics.fieldValuePerPlatform,
-			DrawFieldValues<PlatformSpecifics.FieldValuePerPlatform>,
-			() => {return new PlatformSpecifics.FieldValuePerPlatform(Platform.Standalone, null, string.Empty, null);},
+			ref specifics.fieldValuesPerPlatform,
+			DrawFieldValues<PlatformSpecifics.FieldValuesPerPlatform>,
+			() => {return new PlatformSpecifics.FieldValuesPerPlatform(Platform.Standalone);},
 			true
 		);
 	}
@@ -589,108 +590,160 @@ public class PlatformSpecificsEditor : Editor {
 		GUILayout.EndHorizontal();
 	}
 	
-	Rect lastDropdownRect; //TODO: needs to work with multiple platform specific values
-	
-	void DrawFieldValues<T>(int index, ref T[] array, ref int deleteIndex, ref int moveIndex, ref int moveDirection){
-		PlatformSpecifics.FieldValuePerPlatform[] fieldValuePerPlatform = array as PlatformSpecifics.FieldValuePerPlatform[];
-		DrawPlatformEnum(index, ref deleteIndex, ref moveIndex, ref moveDirection, ref fieldValuePerPlatform[index].platform);
-		PlatformSpecifics.FieldValuePerPlatform fieldSetter = fieldValuePerPlatform[index];
+	void DrawFieldValues<T>(int index, ref T[] array, ref int deleteIndex, ref int moveIndex, ref int moveDirection){		
+		PlatformSpecifics.FieldValuesPerPlatform[] fieldValuesPerPlatform = array as PlatformSpecifics.FieldValuesPerPlatform[];
+		DrawPlatformEnum(index, ref deleteIndex, ref moveIndex, ref moveDirection, ref fieldValuesPerPlatform[index].platform);
+		PlatformSpecifics.FieldValuesPerPlatform fieldSetter = fieldValuesPerPlatform[index];
+		
+		//Platform unsupported warning
+		if(!specifics.PlatformSupportsFieldOverrides(fieldSetter.platform)){
+			Color oldColor = GUI.color;
+			GUI.color = Color.yellow;
+			GUILayout.Box("Field Overrides Not Supported On This Platform");
+			GUI.color = oldColor;
+		}
+		
+		//Init / resize lastFieldDropdownRects
+		if(lastFieldDropdownRects == null || lastFieldDropdownRects.Length != fieldValuesPerPlatform.Length){
+			lastFieldDropdownRects = new Rect[fieldValuesPerPlatform.Length][];
+		}
+		if(lastFieldDropdownRects[index] == null || lastFieldDropdownRects[index].Length != fieldSetter.values.Count){
+			lastFieldDropdownRects[index] = new Rect[fieldSetter.values.Count];
+		}
 				
 		GUILayout.Space(10f);
-		GUILayout.BeginHorizontal();	
+		
+		int? valueOverrideIndexToRemove = null;
 
-		//Draw button
-		string buttonLabel;
-		bool fieldSelected = !string.IsNullOrEmpty(fieldSetter.componentTypeName) && !string.IsNullOrEmpty(fieldSetter.fieldName);
-		if(!fieldSelected){
-			buttonLabel = "No Field";
-		}
-		else{
-			buttonLabel = fieldSetter.componentTypeName + "." + fieldSetter.fieldName;
-		}		
-		bool buttonPressed = GUILayout.Button(buttonLabel, EditorStyles.popup);
-		if(Event.current.type == EventType.Repaint){
-			lastDropdownRect = GUILayoutUtility.GetLastRect();
-		}
-		GUILayout.EndHorizontal();
+		for(int valueOverrideIndex = 0; valueOverrideIndex < fieldSetter.values.Count; valueOverrideIndex++){
+			PlatformSpecifics.FieldValueOverride valueOverride = fieldSetter.values[valueOverrideIndex];
+			GUILayout.BeginHorizontal();
+			//Draw field selection dropdown target
+			string fieldSelectionDropdownLabel;
+			bool fieldSelected = valueOverride.ValidTarget;
+			if(!fieldSelected){
+				fieldSelectionDropdownLabel = "No Field";
+			}
+			else{
+				fieldSelectionDropdownLabel = valueOverride.componentTypeName + "." + valueOverride.fieldName;
+			}		
+			bool displayFieldSelectionDropdown = GUILayout.Button(fieldSelectionDropdownLabel, EditorStyles.popup);
+			if(Event.current.type == EventType.Repaint){
+				lastFieldDropdownRects[index][valueOverrideIndex] = GUILayoutUtility.GetLastRect();
+			}
+			//Draw remove button
+			if(GUILayout.Button(string.Empty, removeButtonStyle)){
+				valueOverrideIndexToRemove = valueOverrideIndex;
+			}
+			
+			GUILayout.EndHorizontal();
 		
-		//Draw value field
-		if(fieldSelected){
-			SerializedObject serObj = new SerializedObject(specifics);
-			SerializedProperty valueSet = serObj.FindProperty("fieldValuePerPlatform").GetArrayElementAtIndex(index).FindPropertyRelative("fieldValue");
-			SerializedProperty fieldValue = valueSet.FindPropertyRelative(fieldSetter.fieldValue.GetValueFieldName());
-			EditorGUILayout.PropertyField(fieldValue);
-			//Clear obj reference value and warn if not assignable to target
-			Type componentType = specifics.GetComponent(fieldSetter.componentTypeName).GetType();			
-			if(fieldValue.objectReferenceValue != null
-				&& !IsValidObjectAssignment(
-					fieldValue.objectReferenceValue,
-					componentType,
-					fieldSetter.fieldName)
-			){
-				Debug.LogWarning("Cannot convert type "
-					+ fieldValue.objectReferenceValue.GetType().Name
-					+ " to target type "
-					+ TargetFieldOrPropertyType(componentType, fieldSetter.fieldName)
+			//Draw value field
+			if(fieldSelected){
+				//Dig through serialized object to get SerializedProperty for this value override
+				SerializedObject platformSpecificsSerObj = new SerializedObject(specifics);
+				SerializedProperty currentOverrideProperty = GetFieldValueOverrideProperty(platformSpecificsSerObj,
+					index,
+					valueOverrideIndex,
+					valueOverride
 				);
-				fieldValue.objectReferenceValue = null;
-				
+				//Draw field
+				EditorGUILayout.PropertyField(currentOverrideProperty);
+				//Clear obj reference value and warn if not assignable to target
+				Type componentType = specifics.GetComponent(valueOverride.componentTypeName).GetType();			
+				if(currentOverrideProperty.propertyType == SerializedPropertyType.ObjectReference
+					&& currentOverrideProperty.objectReferenceValue != null
+					&& !IsValidObjectAssignment(
+						currentOverrideProperty.objectReferenceValue,
+						componentType,
+						valueOverride.fieldName)
+				){
+					Debug.LogWarning("Cannot convert type "
+						+ currentOverrideProperty.objectReferenceValue.GetType().Name
+						+ " to target type "
+						+ TargetFieldOrPropertyType(componentType, valueOverride.fieldName)
+					);
+					currentOverrideProperty.objectReferenceValue = null;				
+				}
+				platformSpecificsSerObj.ApplyModifiedProperties();			
 			}
-			serObj.ApplyModifiedProperties();
-			
+		
+			//Draw field selection dropdown
+			if(displayFieldSelectionDropdown){
+				DrawFieldSelectionDropdown(lastFieldDropdownRects[index][valueOverrideIndex], valueOverride, fieldSelectionDropdownLabel);				
+			}
 		}
 		
-		//Handle button press
-		if(buttonPressed){
-			//Gather dropdown options
-			Component[] components = specifics.gameObject.GetComponents<Component>();
-			List<FieldSelectOption> dropDownOptions = new List<FieldSelectOption>();
-			foreach(Component comp in components){
-				//Fields
-				FieldInfo[] publicFields = comp.GetType().GetFields(BindingFlags.Public | BindingFlags.Instance);
-				foreach(FieldInfo field in publicFields){
-					if(PlatformSpecificFieldValue.IsValidType(field.FieldType)){
-						dropDownOptions.Add(new FieldSelectOption(comp, field));
-					}
-				}
-				
-				//Properties
-				PropertyInfo[] publicProperties = comp.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance);
-				foreach(PropertyInfo property in publicProperties){
-					if(property.CanWrite && PlatformSpecificFieldValue.IsValidType(property.PropertyType)){
-						dropDownOptions.Add(new FieldSelectOption(comp, property));
-					}
-				}
-			}
-			
-			//Construct menu			
-			GenericMenu menu = new GenericMenu();
-			//On-select action
-			GenericMenu.MenuFunction2 assignSelection = (object x) => {
-				FieldSelectOption option = (FieldSelectOption)x;
-				if(option == null){
-					fieldSetter.componentTypeName = "";
-					fieldSetter.fieldName = "";
-					fieldSetter.fieldValue = new PlatformSpecificFieldValue();
-				}
-				else{
-					fieldSetter.componentTypeName = option.component.GetType().Name;
-					fieldSetter.fieldName = option.fieldName;
-					fieldSetter.fieldValue = new PlatformSpecificFieldValue(option.fieldType);
-				}
-			};
-			//Add constant menu items
-			menu.AddItem(new GUIContent("No Field"), false, assignSelection, null);
-			if(dropDownOptions.Count > 0){
-				menu.AddSeparator("");
-			}
-			//Add dynamic menu items
-			foreach(FieldSelectOption option in dropDownOptions){
-				menu.AddItem(new GUIContent(option.MenuPath), buttonLabel.Replace(".", "/") == option.MenuPath, assignSelection, option);
-			}
-			//Show menu
-			menu.DropDown(lastDropdownRect);
+		//Apply deletion, if any
+		if(valueOverrideIndexToRemove.HasValue){
+			Undo.RecordObject(specifics, "delete field");
+			fieldSetter.RemoveAt(valueOverrideIndexToRemove.Value);
+			EditorUtility.SetDirty(specifics);
 		}
+		
+		//Draw add field button
+		GUILayout.BeginHorizontal();
+		GUILayout.Label("Add Field");
+		if(GUILayout.Button(string.Empty, addButtonStyle)){
+			Undo.RecordObject(specifics, "add field");
+			fieldSetter.AddNew();
+			EditorUtility.SetDirty(specifics);
+		}
+		GUILayout.EndHorizontal();		
+	}
+	
+	//Helper function for DrawFieldValues
+	void DrawFieldSelectionDropdown(Rect dropdownRect, PlatformSpecifics.FieldValueOverride valueOverride, string currentlySelected){
+		//Gather dropdown options
+		Component[] components = specifics.gameObject.GetComponents<Component>();
+		List<FieldSelectOption> dropDownOptions = new List<FieldSelectOption>();
+		foreach(Component comp in components){
+			//Fields
+			FieldInfo[] publicFields = comp.GetType().GetFields(BindingFlags.Public | BindingFlags.Instance);
+			foreach(FieldInfo field in publicFields){
+				if(PlatformSpecificFieldValue.IsValidType(field.FieldType)){
+					dropDownOptions.Add(new FieldSelectOption(comp, field));
+				}
+			}
+		
+			//Properties
+			PropertyInfo[] publicProperties = comp.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance);
+			foreach(PropertyInfo property in publicProperties){
+				if(property.CanWrite && PlatformSpecificFieldValue.IsValidType(property.PropertyType)){
+					dropDownOptions.Add(new FieldSelectOption(comp, property));
+				}
+			}
+		}
+	
+		//Construct menu			
+		GenericMenu menu = new GenericMenu();
+		//Menu on-select action definition
+		GenericMenu.MenuFunction2 assignSelection = (object x) => {
+			Undo.RecordObject(specifics, "set field target");
+			FieldSelectOption option = (FieldSelectOption)x;			
+			if(option == null){				
+				valueOverride.componentTypeName = "";
+				valueOverride.fieldName = "";
+				valueOverride.fieldValue = new PlatformSpecificFieldValue();
+			}
+			else{
+				valueOverride.componentTypeName = option.component.GetType().Name;
+				valueOverride.fieldName = option.fieldName;
+				valueOverride.fieldValue = new PlatformSpecificFieldValue(option.fieldType);
+			}
+			EditorUtility.SetDirty(specifics);
+		};
+		//Add constant menu items
+		menu.AddItem(new GUIContent("No Field"), false, assignSelection, null);
+		if(dropDownOptions.Count > 0){
+			menu.AddSeparator("");
+		}
+		//Add dynamic menu items
+		foreach(FieldSelectOption option in dropDownOptions){
+			menu.AddItem(new GUIContent(option.MenuPath), currentlySelected.Replace(".", "/") == option.MenuPath, assignSelection, option);
+		}
+		//Show menu
+		menu.DropDown(dropdownRect);
 	}
 	
 	void DrawSection<T>(ref bool show, string header, ref T[] array, DrawArray<T> drawArray, Constructor<T> construct, bool drawAddButton) {
@@ -805,7 +858,8 @@ public class PlatformSpecificsEditor : Editor {
 		return targetType != null && targetType.IsAssignableFrom(obj.GetType());
 	}
 	
-	//Helper function for platform-specific field values
+	//Returns the type of the field or property with the given name on the given type.
+	//If there is no field or property with the given name, returns null.
 	Type TargetFieldOrPropertyType(Type componentType, string fieldName){
 		FieldInfo field = componentType.GetField(fieldName, BindingFlags.Public | BindingFlags.Instance);
 		if(field != null){
@@ -816,5 +870,20 @@ public class PlatformSpecificsEditor : Editor {
 			return property.PropertyType;
 		}
 		return null;
+	}
+	
+	//Digs through a PlatformSpecifics serialized object for the SerializedProperty for a specific part of a PlatformSpecificFieldValue.
+	SerializedProperty GetFieldValueOverrideProperty(
+			SerializedObject platformSpecificsSerObj,
+			int platformIndex,
+			int valueOverrideIndex,
+			PlatformSpecifics.FieldValueOverride valueOverride
+	){
+		SerializedProperty perPlatformArray = platformSpecificsSerObj.FindProperty("fieldValuesPerPlatform");
+		SerializedProperty currentPlatform = perPlatformArray.GetArrayElementAtIndex(platformIndex);
+		SerializedProperty overridesArray = currentPlatform.FindPropertyRelative("values");
+		SerializedProperty currentOverride = overridesArray.GetArrayElementAtIndex(valueOverrideIndex);
+		SerializedProperty currentOverrideValueCollection = currentOverride.FindPropertyRelative("fieldValue");				
+		return currentOverrideValueCollection.FindPropertyRelative(valueOverride.fieldValue.GetValueFieldName());
 	}
 }
