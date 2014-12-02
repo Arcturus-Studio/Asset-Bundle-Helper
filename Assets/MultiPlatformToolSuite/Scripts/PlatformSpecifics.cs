@@ -178,12 +178,24 @@ public class PlatformSpecifics : MonoBehaviour {
 			if(component != null){
 				FieldInfo field = component.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.Public);
 				if(field != null){
-					field.SetValue(component, fieldValue.GetValue());
+					object val = fieldValue.GetValue();
+					if(val == null || field.FieldType.IsAssignableFrom(val.GetType())){
+						field.SetValue(component, val);
+					}
+					else{
+						field.SetValue(component, null);
+					}
 					return;
 				}
 				PropertyInfo property = component.GetType().GetProperty(fieldName, BindingFlags.Instance | BindingFlags.Public);
 				if(property != null){
-					property.SetValue(component, fieldValue.GetValue(), null);
+					object val = fieldValue.GetValue();
+					if(val == null || property.PropertyType.IsAssignableFrom(val.GetType())){
+						property.SetValue(component, fieldValue.GetValue(), null);
+					}
+					else{
+						property.SetValue(component, null, null);
+					}
 					return;
 				}
 				Debug.LogError("No public field or property " + fieldName + " on component " + component, component);
