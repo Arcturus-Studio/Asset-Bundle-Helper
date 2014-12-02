@@ -179,23 +179,21 @@ public class PlatformSpecifics : MonoBehaviour {
 				FieldInfo field = component.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.Public);
 				if(field != null){
 					object val = fieldValue.GetValue();
-					if(val == null || field.FieldType.IsAssignableFrom(val.GetType())){
-						field.SetValue(component, val);
+					//"None" override value isn't a "true" null, so turn it into one to avoid casting issues
+					if(val is UnityEngine.Object && val as UnityEngine.Object == null){
+						val = null;
 					}
-					else{
-						field.SetValue(component, null);
-					}
+					field.SetValue(component, val);
 					return;
 				}
 				PropertyInfo property = component.GetType().GetProperty(fieldName, BindingFlags.Instance | BindingFlags.Public);
 				if(property != null){
 					object val = fieldValue.GetValue();
-					if(val == null || property.PropertyType.IsAssignableFrom(val.GetType())){
-						property.SetValue(component, fieldValue.GetValue(), null);
+					//"None" override value isn't a "true" null, so turn it into one to avoid casting issues
+					if(val is UnityEngine.Object && val as UnityEngine.Object == null){
+						val = null;
 					}
-					else{
-						property.SetValue(component, null, null);
-					}
+					property.SetValue(component, val, null);
 					return;
 				}
 				Debug.LogError("No public field or property " + fieldName + " on component " + component, component);
