@@ -21,8 +21,19 @@ public class AssetBundleListing : ScriptableObject {
 	public List<AssetBundleContentsWeakReference> contentWeakRefs = new List<AssetBundleContentsWeakReference>();
 	public List<AssetBundleListing> dependencies = new List<AssetBundleListing>();
 	
+	public string Id {
+		get { return id; }
+#if UNITY_EDITOR
+		set {
+			id = value;
+			EditorUtility.SetDirty(this);
+		}
+#endif
+	}
+	[SerializeField] private string id; //Unique identifier for this listing, used for constructing file paths for asset bundles and AssetBundleContents
+	
 	//Fetch an asset contained in this listing by name.
-	//Warning: If you do not match GetAsset and ReleaseAsset calls, the asset will never be unloaded.
+	//Warning: If you do not match GetAsset calls with ReleaseAsset calls, the asset will never be unloaded.
 	public Coroutine<T> GetAsset<T>(string assetName) where T : UnityEngine.Object{
 		return AssetBundleLoader.GetAsset<T>(this, assetName);
 	}
@@ -49,7 +60,7 @@ public class AssetBundleListing : ScriptableObject {
 	//Unique file prefix for this listing
 	public string FileNamePrefix {
 		get{
-			return name.ToLower();
+			return Id;
 		}
 	}
 	
@@ -132,7 +143,7 @@ public class AssetBundleContentsWeakReference {
 		if(!Directory.Exists(dir)){
 			Directory.CreateDirectory(dir);
 		}
-		contentsPath = AssetDatabase.GenerateUniqueAssetPath(Path.Combine(dir, sourceListing.name + (string.IsNullOrEmpty(tags) ? "" : "_") + tags + ".asset"));
+		contentsPath = AssetDatabase.GenerateUniqueAssetPath(Path.Combine(dir, sourceListing.Id + (string.IsNullOrEmpty(tags) ? "" : "_") + tags + ".asset"));
 		AssetBundleContents	contents = ScriptableObject.CreateInstance<AssetBundleContents>();
 		contents.listing = sourceListing;
 		contents.tags = tags;

@@ -62,9 +62,12 @@ public class AssetBundleListingEditor : Editor {
 	
 	List<ListingEditorEntry> assets;	
 	List<ListingEditorEntry> toRemove = new List<ListingEditorEntry>();
+	string newId;
+	string idErrorMsg;
 	
 	public void OnEnable(){
 		UpdateListingEntries();
+		newId = (target as AssetBundleListing).Id;
 	}
 	
 	private void UpdateListingEntries(){
@@ -104,6 +107,26 @@ public class AssetBundleListingEditor : Editor {
 		AssetBundleListing listing = target as AssetBundleListing;
 		EditorGUIUtility.LookLikeControls();
 		
+		//Identifier
+		GUILayout.BeginHorizontal();
+		newId = EditorGUILayout.TextField("ID", newId);
+		if(GUILayout.Button("Apply", GUILayout.ExpandWidth(false))){
+			if(ValidateNewId(newId, out idErrorMsg)){
+				listing.Id = newId;
+				idErrorMsg = null; //Clear error
+			}
+		}
+		GUILayout.EndHorizontal();
+		
+		//Invalid ID errors
+		if(idErrorMsg != null){
+			GUILayout.Box("Invalid ID:\n" + idErrorMsg, EditorStyles.helpBox);
+		}
+		
+		if(string.IsNullOrEmpty(listing.Id)){
+			GUILayout.Box("You must assign an ID before configuring bundle contents", EditorStyles.helpBox);
+		}
+		
 		//Tag group filter options
 		string[] tagMaskOptions = new string[Settings.tagGroups.Length+1];
 		tagMaskOptions[0] = "Platform";
@@ -123,26 +146,9 @@ public class AssetBundleListingEditor : Editor {
 		}
 		GUILayout.EndHorizontal();
 		
-		List<BundleTagGroup> tagGroups = Settings.MaskToTagGroups(listing.tagMask);
-		//First tag group runs horizontally
-		IList<BundleTag> horizontalTags;
-		if(tagGroups.Count > 0){
-			horizontalTags = tagGroups[0].tags;
-		}
-		else{
-			horizontalTags = new BundleTag[]{BundleTag.NoTag};
-		}
-		
-		//All other tag groups run vertically
-		List<List<BundleTag>> verticalTags = new List<List<BundleTag>>();
-		if(tagGroups.Count > 1){
-			verticalTags.AddRange(BundleTagUtils.TagCombinations(tagGroups, 1));
-		}
-		else{
-			var noTagList = new List<BundleTag>();
-			noTagList.Add(BundleTag.NoTag);
-			verticalTags.Add(noTagList);
-		}
+		List<BundleTag> horizontalTags;
+		List<List<BundleTag>> verticalTags;
+		GetTagMatrix(listing.tagMask, out horizontalTags, out verticalTags);
 		
 		//Calc layout configuration
 		bool showHorizontalTags = horizontalTags[0] != BundleTag.NoTag;
@@ -316,6 +322,80 @@ public class AssetBundleListingEditor : Editor {
 				}
 				UpdateBundleContents();
 			}
+		}
+	}
+	
+
+	
+	//Returns whether the given string is a valid listing ID
+	private bool ValidateNewId(string newId, out string errorMessage){
+		bool isValid = true;
+		StringBuilder errBuilder = new StringBuilder();
+		//Replace null string with empty string for further processing, but it's automatically invalid
+		if(newId == null){
+			isValid = false;
+			newId = "";
+			errBuilder.AppendLine("Id string cannot be null.");
+		}
+		//Check for invalid characters
+		char[] invalidFileNameChars = Path.GetInvalidFileNameChars();
+		for(int i = 0; i < newId.Length; i++){
+			//System-disallowed chars
+			//Note that these may differ depending on file system, and it's still possible to construct illegal or reserved filenames.
+			//But it's better than nothing.
+			for(int j = 0; j < invalidFileNameChars.Length; j++){
+				if(newId[i] == invalidFileNameChars[j]){
+					errBuilder.AppendLine("Invalid character: '" + invalidFileNameChars[j] + "' cannot be used by the file system.");
+					isValid = false;
+				}
+			}
+			//Internal special chars
+			char[] specialChars = AssetBundleChars.GetSpecialChars();
+			for(int j = 0; j < specialChars.Length; j++){
+				if(newId[i] == specialChars[j]){
+					errBuilder.AppendLine("Invalid character: '" + specialChars[j] + "' is reserved for internal use.");
+					isValid = false;
+				}
+			}
+		}
+		//Check id is at least 1 char long
+		if(newId.Length == 0){
+			isValid = false;
+			errBuilder.AppendLine("Id string cannot be empty.");
+		}
+		//Check that new id is case-insensitive unique
+		List<AssetBundleListing> bundles = AssetBundleListingFinder.GetAssetBundleListings();
+		foreach(AssetBundleListing bundle in bundles){
+			if(bundle.Id.Equals(newId, System.StringComparison.CurrentCultureIgnoreCase)){
+				errBuilder.AppendLine("Id is already in use by listing \"" + bundle.name + "\". Ids are case-insensitive.");
+				isValid = false;
+			}
+		}
+		errorMessage = errBuilder.ToString().Trim();
+		return isValid;
+	}
+	
+	//Populates a 2d grid of BundleTag combinations based on provided tag group mask
+	private void GetTagMatrix(int tagMask, out List<BundleTag> horizontalTags, out List<List<BundleTag>> verticalTags){
+		List<BundleTagGroup> tagGroups = Settings.MaskToTagGroups(tagMask);
+		//First tag group runs horizontally
+		if(tagGroups.Count > 0){
+			horizontalTags = new List<BundleTag>(tagGroups[0].tags);
+		}
+		else{
+			horizontalTags = new List<BundleTag>();
+			horizontalTags.Add(BundleTag.NoTag);
+		}
+	
+		//All other tag groups run vertically
+		verticalTags = new List<List<BundleTag>>();
+		if(tagGroups.Count > 1){
+			verticalTags.AddRange(BundleTagUtils.TagCombinations(tagGroups, 1));
+		}
+		else{
+			var noTagList = new List<BundleTag>();
+			noTagList.Add(BundleTag.NoTag);
+			verticalTags.Add(noTagList);
 		}
 	}
 }

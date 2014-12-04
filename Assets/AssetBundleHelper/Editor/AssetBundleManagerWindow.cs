@@ -21,18 +21,11 @@ public class AssetBundleManagerWindow : EditorWindow {
 
 	
 	public void Refresh(){
-		//Search for existing AssetBundleListings
+		//Search for existing AssetBundleListings	
+		detectedBundles = AssetBundleListingFinder.GetAssetBundleListings();
 		detectedBundlesFileInfos = new List<FileInfo>();
-		detectedBundles = new List<AssetBundleListing>();
-		DirectoryInfo di = new DirectoryInfo(Application.dataPath); //Assets directory
-		FileInfo[] files = di.GetFiles("*.asset", SearchOption.AllDirectories);
-		foreach(FileInfo fi in files){
-			string projectRelativePath = fi.FullName.Substring(di.Parent.FullName.Length + 1); //+1 includes slash
-			AssetBundleListing abl = AssetDatabase.LoadAssetAtPath(projectRelativePath, typeof(AssetBundleListing)) as AssetBundleListing;
-			if(abl != null){
-				detectedBundlesFileInfos.Add(fi);
-				detectedBundles.Add(abl);
-			}
+		foreach(AssetBundleListing listing in detectedBundles){
+			detectedBundlesFileInfos.Add(new FileInfo(AssetDatabase.GetAssetPath(listing)));
 		}
 		Repaint();
 	}
