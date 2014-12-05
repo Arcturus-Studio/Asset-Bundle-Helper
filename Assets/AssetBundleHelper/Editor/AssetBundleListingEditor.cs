@@ -111,7 +111,7 @@ public class AssetBundleListingEditor : Editor {
 		GUILayout.BeginHorizontal();
 		newId = EditorGUILayout.TextField("ID", newId);
 		if(GUILayout.Button("Apply", GUILayout.ExpandWidth(false))){
-			if(ValidateNewId(newId, out idErrorMsg)){
+			if(TrySetId(listing, newId, out idErrorMsg)){
 				listing.Id = newId;
 				idErrorMsg = null; //Clear error
 			}
@@ -120,11 +120,12 @@ public class AssetBundleListingEditor : Editor {
 		
 		//Invalid ID errors
 		if(idErrorMsg != null){
-			GUILayout.Box("Invalid ID:\n" + idErrorMsg, EditorStyles.helpBox);
+			GUILayout.Box(idErrorMsg, EditorStyles.helpBox);
 		}
 		
 		if(string.IsNullOrEmpty(listing.Id)){
 			GUILayout.Box("You must assign an ID before configuring bundle contents", EditorStyles.helpBox);
+			GUI.enabled = false;
 		}
 		
 		//Tag group filter options
@@ -157,8 +158,9 @@ public class AssetBundleListingEditor : Editor {
 		const int normalColumnWidth = 60;
 		const int wideColumnWidth = 100;
 		const int extraWideColumnWidth = 160; //For best results, should be aprox normalColumnWidth + wideColumnWidth
-		GUILayoutOption[] tagLayoutParams = new GUILayoutOption[]{GUILayout.Height(16), GUILayout.Width(normalColumnWidth)};
-		GUILayoutOption[] wideLayoutParams = new GUILayoutOption[]{GUILayout.Height(16), GUILayout.Width(extraWideLeftColumn ? extraWideColumnWidth : wideColumnWidth)};		
+		const int rowHeight = 16;
+		GUILayoutOption[] tagLayoutParams = new GUILayoutOption[]{GUILayout.Height(rowHeight), GUILayout.Width(normalColumnWidth)};
+		GUILayoutOption[] wideLayoutParams = new GUILayoutOption[]{GUILayout.Height(rowHeight), GUILayout.Width(extraWideLeftColumn ? extraWideColumnWidth : wideColumnWidth)};		
 		GUILayout.BeginVertical(GUI.skin.box);
 		
 		//Header
@@ -168,7 +170,7 @@ public class AssetBundleListingEditor : Editor {
 		if(showHorizontalTags && !showVerticalTags){
 			GUILayout.BeginHorizontal(wideLayoutParams);
 			GUILayout.Label("Asset (");
-			GUILayout.Label(new GUIContent(horizontalTags[0].name, horizontalTags[0].icon32), GUILayout.Height(16));
+			GUILayout.Label(new GUIContent(horizontalTags[0].name, horizontalTags[0].icon32), GUILayout.Height(rowHeight));
 			GUILayout.Label(")");
 			GUILayout.FlexibleSpace();
 			GUILayout.EndHorizontal();
@@ -366,13 +368,73 @@ public class AssetBundleListingEditor : Editor {
 		//Check that new id is case-insensitive unique
 		List<AssetBundleListing> bundles = AssetBundleListingFinder.GetAssetBundleListings();
 		foreach(AssetBundleListing bundle in bundles){
-			if(bundle.Id.Equals(newId, System.StringComparison.CurrentCultureIgnoreCase)){
+			if(newId.Equals(bundle.Id, System.StringComparison.CurrentCultureIgnoreCase)){
 				errBuilder.AppendLine("Id is already in use by listing \"" + bundle.name + "\". Ids are case-insensitive.");
 				isValid = false;
 			}
 		}
 		errorMessage = errBuilder.ToString().Trim();
 		return isValid;
+	}
+	
+	//Tries to change the listing ID to the given ID. Returns true if successful, false otherwise.
+	//errorMessage will contain cause of failure, or empty string if operation successful.
+	private bool TrySetId(AssetBundleListing listing, string newId, out string errorMessage){
+		//Validate ID string
+		if(!ValidateNewId(newId, out errorMessage)){
+			errorMessage = "Invalid ID:\n" + errorMessage;
+			return false;
+		}
+		StringBuilder errBuilder = new StringBuilder();
+		//Validate AssetBundleContents renames
+		bool movesValid = true;
+		foreach(AssetBundleContentsWeakReference weakRef in listing.contentWeakRefs){
+			AssetBundleContents bundleContents = weakRef.Load();
+			if(bundleContents){
+				string moveErrorMessage = AssetDatabase.ValidateMoveAsset(AssetDatabase.GetAssetPath(bundleContents), AssetBundleContentsWeakReference.GetPath(newId, weakRef.tags));
+				if(!string.IsNullOrEmpty(moveErrorMessage)){
+					errBuilder.AppendLine(moveErrorMessage);
+					movesValid = false;
+				}
+			}
+			else{
+				errBuilder.AppendLine("Broken reference to AssetBundleContents. Could not load asset at " + weakRef.ContentsPath);
+				movesValid = false;				
+			}
+		}
+		//Rename AssetBundleContents
+		bool movesSuccessful = movesValid;
+		if(movesValid){
+			foreach(AssetBundleContentsWeakReference weakRef in listing.contentWeakRefs){
+				AssetBundleContents bundleContents = weakRef.Load();
+				string moveErrorMessage = AssetDatabase.MoveAsset(AssetDatabase.GetAssetPath(bundleContents), AssetBundleContentsWeakReference.GetPath(newId, weakRef.tags));
+				if(!string.IsNullOrEmpty(moveErrorMessage)){
+					errBuilder.AppendLine(moveErrorMessage);
+					movesSuccessful = false; //Hope this never happens
+					break; //Abort operation
+				}
+				else{
+					weakRef.ContentsPath = AssetDatabase.GetAssetPath(bundleContents);
+					EditorUtility.SetDirty(listing);
+				}
+			}
+		}
+		AssetDatabase.SaveAssets();
+		if(!movesValid){
+			errBuilder.Insert(0, "Could not apply ID, some files could not be moved:\n");
+		}
+		else if(!movesSuccessful){
+			errBuilder.Insert(0, "Error while processing ID change! Some AssetBundleContents may have been renamed. Error:\n");
+		}
+		errorMessage = errBuilder.ToString().Trim();
+		
+		if(!movesSuccessful){
+			Debug.LogError(errorMessage); //Show on console for posterity
+		}
+		if(movesSuccessful){
+			listing.Id = newId;
+		}
+		return movesSuccessful;
 	}
 	
 	//Populates a 2d grid of BundleTag combinations based on provided tag group mask

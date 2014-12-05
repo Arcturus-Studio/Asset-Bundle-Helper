@@ -54,7 +54,7 @@ public class AssetBundleListing : ScriptableObject {
 	
 	//File name for the asset bundle for this listing corresponding to the passed tag set string.
 	public string FileName(string tagString){
-		return FileNamePrefix + "_" + tagString.ToLower();
+		return FileNamePrefix + AssetBundleChars.BundleSeparator + tagString.ToLower();
 	}
 	
 	//Unique file prefix for this listing
@@ -66,7 +66,7 @@ public class AssetBundleListing : ScriptableObject {
 	
 	//Returns the FileNamePrefix part of a full listing filename. I.e. strips the tag string.
 	public static string GetFileNamePrefix(string fileName){
-		return fileName.Substring(0, fileName.LastIndexOf("_"));
+		return fileName.Substring(0, fileName.LastIndexOf(AssetBundleChars.BundleSeparator));
 	}
 	
 #if UNITY_EDITOR
@@ -114,6 +114,13 @@ public class AssetBundleListing : ScriptableObject {
 [System.Serializable]
 public class AssetBundleContentsWeakReference {
 	public string tags; //Period-delimited tag set string
+
+#if UNITY_EDITOR
+	public string ContentsPath {
+		get { return contentsPath; }		
+		set{ contentsPath = value; }
+	}
+#endif
 	[SerializeField] private string contentsPath; //Path to AssetBundleContents asset
 
 #if UNITY_EDITOR
@@ -139,17 +146,22 @@ public class AssetBundleContentsWeakReference {
 	
 	public void Create(AssetBundleListing sourceListing){
 		System.Console.WriteLine("Creating AssetBundleContents for " + sourceListing + " with tags \"" + tags + "\"");
-		string dir = Path.Combine(AssetBundleEditorSettings.DirectoryPath, "BundleContents");
-		if(!Directory.Exists(dir)){
-			Directory.CreateDirectory(dir);
+		contentsPath = GetPath(sourceListing.Id, tags);
+		if(!Directory.Exists(Path.GetDirectoryName(contentsPath))){
+			Directory.CreateDirectory(Path.GetDirectoryName(contentsPath));
 		}
-		contentsPath = AssetDatabase.GenerateUniqueAssetPath(Path.Combine(dir, sourceListing.Id + (string.IsNullOrEmpty(tags) ? "" : "_") + tags + ".asset"));
 		AssetBundleContents	contents = ScriptableObject.CreateInstance<AssetBundleContents>();
 		contents.listing = sourceListing;
 		contents.tags = tags;
 		AssetDatabase.CreateAsset(contents, contentsPath);
 		EditorUtility.SetDirty(sourceListing);
 		AssetDatabase.SaveAssets();
+	}
+	
+	//Returns the target path for a contents with the given listing ID and tag set.
+	public static string GetPath(string listingId, string tags){
+		string dir = Path.Combine(AssetBundleEditorSettings.DirectoryPath, "BundleContents");
+		return Path.Combine(dir, listingId + (string.IsNullOrEmpty(tags) ? "" : AssetBundleChars.BundleSeparator.ToString()) + tags + ".asset");
 	}
 #endif
 }

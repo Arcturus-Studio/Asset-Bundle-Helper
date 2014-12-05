@@ -48,7 +48,7 @@ public static class BundleTagUtils {
 					continue;
 				}
 				if(result.Length > 0){
-					result.Append(".");
+					result.Append(AssetBundleChars.TagSeparator);
 				}
 				result.Append(tag.name);
 			}
@@ -68,7 +68,7 @@ public static class BundleTagUtils {
 					continue;
 				}
 				if(result.Length > 0){
-					result.Append(".");
+					result.Append(AssetBundleChars.TagSeparator);
 				}
 				result.Append(tag);
 			}
