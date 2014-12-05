@@ -614,6 +614,11 @@ public class PlatformSpecificsEditor : Editor {
 		GUILayout.Space(10f);
 		
 		int? valueOverrideIndexToRemove = null;
+		
+		//Screen.width returns inspector view width in this context
+		//-20 fudges space for remove button, accounts for margins
+		int dropdownWidth = Mathf.Max(0, Screen.width / 2 - 20); 
+		int propertyFieldWidth = Mathf.Max(0, Screen.width / 2 - 20);
 
 		for(int valueOverrideIndex = 0; valueOverrideIndex < fieldSetter.values.Count; valueOverrideIndex++){
 			PlatformSpecifics.FieldValueOverride valueOverride = fieldSetter.values[valueOverrideIndex];
@@ -627,16 +632,10 @@ public class PlatformSpecificsEditor : Editor {
 			else{
 				fieldSelectionDropdownLabel = valueOverride.componentTypeName + "." + valueOverride.fieldName;
 			}		
-			bool displayFieldSelectionDropdown = GUILayout.Button(fieldSelectionDropdownLabel, EditorStyles.popup);
+			bool displayFieldSelectionDropdown = GUILayout.Button(fieldSelectionDropdownLabel, EditorStyles.popup, GUILayout.Width(dropdownWidth));
 			if(Event.current.type == EventType.Repaint){
 				lastFieldDropdownRects[index][valueOverrideIndex] = GUILayoutUtility.GetLastRect();
 			}
-			//Draw remove button
-			if(GUILayout.Button(string.Empty, removeButtonStyle)){
-				valueOverrideIndexToRemove = valueOverrideIndex;
-			}
-			
-			GUILayout.EndHorizontal();
 		
 			//Draw value field
 			if(fieldSelected){
@@ -648,7 +647,7 @@ public class PlatformSpecificsEditor : Editor {
 					valueOverride
 				);
 				//Draw field
-				EditorGUILayout.PropertyField(currentOverrideProperty);
+				EditorGUILayout.PropertyField(currentOverrideProperty, new GUIContent(""), GUILayout.Width(propertyFieldWidth));
 				//Clear obj reference value and warn if not assignable to target
 				Type componentType = specifics.GetComponent(valueOverride.componentTypeName).GetType();			
 				if(currentOverrideProperty.propertyType == SerializedPropertyType.ObjectReference
@@ -667,6 +666,16 @@ public class PlatformSpecificsEditor : Editor {
 				}
 				platformSpecificsSerObj.ApplyModifiedProperties();			
 			}
+			else{
+				GUILayout.FlexibleSpace();
+			}
+			
+			//Draw remove button
+			if(GUILayout.Button(string.Empty, removeButtonStyle)){
+				valueOverrideIndexToRemove = valueOverrideIndex;
+			}
+
+			GUILayout.EndHorizontal();
 		
 			//Draw field selection dropdown
 			if(displayFieldSelectionDropdown){
@@ -683,13 +692,18 @@ public class PlatformSpecificsEditor : Editor {
 		
 		//Draw add field button
 		GUILayout.BeginHorizontal();
+		GUILayout.BeginHorizontal(); //Start clickable area def
 		GUILayout.Label("Add Field");
-		if(GUILayout.Button(string.Empty, addButtonStyle)){
+		GUILayout.Label(string.Empty, addButtonStyle);		
+		GUILayout.EndHorizontal(); //End clickable area def
+		if(GUI.Button(GUILayoutUtility.GetLastRect(), string.Empty, EditorStyles.label)){
 			Undo.RecordObject(specifics, "add field");
 			fieldSetter.AddNew();
 			EditorUtility.SetDirty(specifics);
 		}
-		GUILayout.EndHorizontal();		
+		GUILayout.FlexibleSpace();
+		GUILayout.EndHorizontal();
+		
 	}
 	
 	//Helper function for DrawFieldValues
