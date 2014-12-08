@@ -615,10 +615,9 @@ public class PlatformSpecificsEditor : Editor {
 		
 		int? valueOverrideIndexToRemove = null;
 		
-		//Screen.width returns inspector view width in this context
-		//-20 fudges space for remove button, accounts for margins
-		int dropdownWidth = Mathf.Max(0, Screen.width / 2 - 20); 
-		int propertyFieldWidth = Mathf.Max(0, Screen.width / 2 - 20);
+		int marginsWidth = (int)removeButtonStyle.fixedWidth + 26; //account for space for remove button, fudge margins
+		int dropdownWidth = Mathf.Max(0, (Screen.width - marginsWidth) / 2); //Screen.width returns inspector view width in this context
+		int propertyFieldWidth = Mathf.Max(0, (Screen.width - marginsWidth) / 2);
 
 		for(int valueOverrideIndex = 0; valueOverrideIndex < fieldSetter.values.Count; valueOverrideIndex++){
 			PlatformSpecifics.FieldValueOverride valueOverride = fieldSetter.values[valueOverrideIndex];
@@ -632,7 +631,7 @@ public class PlatformSpecificsEditor : Editor {
 			else{
 				fieldSelectionDropdownLabel = valueOverride.componentTypeName + "." + valueOverride.fieldName;
 			}		
-			bool displayFieldSelectionDropdown = GUILayout.Button(fieldSelectionDropdownLabel, EditorStyles.popup, GUILayout.Width(dropdownWidth));
+			bool displayFieldSelectionDropdown = GUILayout.Button(fieldSelectionDropdownLabel, EditorStyles.popup, GUILayout.MaxWidth(dropdownWidth));
 			if(Event.current.type == EventType.Repaint){
 				lastFieldDropdownRects[index][valueOverrideIndex] = GUILayoutUtility.GetLastRect();
 			}
@@ -647,7 +646,7 @@ public class PlatformSpecificsEditor : Editor {
 					valueOverride
 				);
 				//Draw field
-				EditorGUILayout.PropertyField(currentOverrideProperty, new GUIContent(""), GUILayout.Width(propertyFieldWidth));
+				EditorGUILayout.PropertyField(currentOverrideProperty, new GUIContent(""), GUILayout.MaxWidth(propertyFieldWidth));
 				//Clear obj reference value and warn if not assignable to target
 				Type componentType = specifics.GetComponent(valueOverride.componentTypeName).GetType();			
 				if(currentOverrideProperty.propertyType == SerializedPropertyType.ObjectReference
