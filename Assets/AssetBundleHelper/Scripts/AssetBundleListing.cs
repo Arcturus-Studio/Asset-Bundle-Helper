@@ -13,6 +13,11 @@ using System.Collections.Generic;
 	Also contains inter-listing dependency information.
 */
 public class AssetBundleListing : ScriptableObject {
+	//Returns the FileNamePrefix part of a full listing filename. I.e. strips the tag string.
+	public static string GetFileNamePrefix(string fileName){
+		return fileName.Substring(0, fileName.LastIndexOf(AssetBundleChars.BundleSeparator));
+	}
+	
 	//AssetBundle creation options. Currently obsolete, since at the moment all asset bundles must be built with the same options.
 	public bool gatherDependencies = true;
 	public bool compressed = true;
@@ -47,7 +52,7 @@ public class AssetBundleListing : ScriptableObject {
 	public string ActiveFileName {
 		get {
 			return FileName(
-				BundleTagUtils.BuildTagString(AssetBundleRuntimeSettings.MaskedActiveTags(tagMask | 1)) // | 1 -> Always include platform
+				BundleTagUtils.BuildTagString(AssetBundleRuntimeSettings.MaskedActiveTags(TagMaskIncludingPlatform))
 			);
 		}
 	}
@@ -64,9 +69,11 @@ public class AssetBundleListing : ScriptableObject {
 		}
 	}
 	
-	//Returns the FileNamePrefix part of a full listing filename. I.e. strips the tag string.
-	public static string GetFileNamePrefix(string fileName){
-		return fileName.Substring(0, fileName.LastIndexOf(AssetBundleChars.BundleSeparator));
+	//Returns the tag mask, modified to include the Platform tag group
+	private int TagMaskIncludingPlatform{
+		get{
+			return tagMask | 1;
+		}
 	}
 	
 #if UNITY_EDITOR

@@ -119,7 +119,7 @@ public class AssetBundleListingEditor : Editor {
 		GUILayout.EndHorizontal();
 		
 		//Invalid ID errors
-		if(idErrorMsg != null){
+		if(!string.IsNullOrEmpty(idErrorMsg)){
 			GUILayout.Box(idErrorMsg, EditorStyles.helpBox);
 		}
 		
@@ -129,10 +129,10 @@ public class AssetBundleListingEditor : Editor {
 		}
 		
 		//Tag group filter options
-		string[] tagMaskOptions = new string[Settings.tagGroups.Length+1];
-		tagMaskOptions[0] = "Platform";
-		for(int i = 0; i < Settings.tagGroups.Length; i++){
-			tagMaskOptions[i+1] = Settings.tagGroups[i].name;
+		BundleTagGroup[] tagGroups = Settings.PlatformAndTagGroups;
+		string[] tagMaskOptions = new string[tagGroups.Length];
+		for(int i = 0; i < tagGroups.Length; i++){
+			tagMaskOptions[i] = tagGroups[i].name;
 		}
 		
 		//Header and mask field
@@ -196,6 +196,7 @@ public class AssetBundleListingEditor : Editor {
 			if(showVerticalTags){
 				GUILayout.BeginVertical();
 				foreach(List<BundleTag> tags in verticalTags){
+					//Draw tag collection label -- if single tag, draw tag label + icon
 					if(tags.Count == 1){
 						GUILayout.Label(new GUIContent(tags[0].name, tags[0].icon32), tagLayoutParams);
 					}
@@ -326,8 +327,6 @@ public class AssetBundleListingEditor : Editor {
 			}
 		}
 	}
-	
-
 	
 	//Returns whether the given string is a valid listing ID
 	private bool ValidateNewId(string newId, out string errorMessage){
