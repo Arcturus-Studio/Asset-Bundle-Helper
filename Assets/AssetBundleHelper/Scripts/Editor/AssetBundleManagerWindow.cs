@@ -118,12 +118,12 @@ public class AssetBundleManagerWindow : EditorWindow {
 		for(int i = 0; i < detectedBundles.Count; i++){
 			List<BundleTagGroup> tagGroups = detectedBundles[i].SelectedTagGroupsForcePlatformGroup;
 			List<BundleTag> defaultNonPlatformTags = BundleTagUtils.DefaultTagCombination(tagGroups, 1); //1 = skip platform group
-			
-			var defaultTagsIncPlatform = ((BundleTag)platform).Yield().Concat(defaultNonPlatformTags);
-			string defaultTagStringIncPlatform = BundleTagUtils.BuildTagString(defaultTagsIncPlatform);
 			string defaultTagString = BundleTagUtils.BuildTagString(BundleTagUtils.DefaultTagCombination(detectedBundles[i].SelectedTagGroups, 0));
 			
-			baseBuild[i].assetBundleName = detectedBundles[i].FileName(defaultTagStringIncPlatform);
+			List<BundleTag> defaultTagsIncPlatform = ((BundleTag)platform).Yield().Concat(defaultNonPlatformTags).ToList();
+			BundleTagSelection defaultTagSelectionIncPlatform = new BundleTagSelection(~0, defaultTagsIncPlatform);
+			
+			baseBuild[i].assetBundleName = detectedBundles[i].FileName(defaultTagSelectionIncPlatform);
 			baseBuild[i].assetNames = detectedBundles[i].GetAssetsForTags(defaultTagString).Select(x => AssetDatabase.GetAssetPath(x)).ToArray();
 		}
 		BuildPipeline.BuildAssetBundles(targetDirPath, baseBuild, BuildAssetBundleOptions.None, platform.unityBuildTarget);
@@ -161,16 +161,17 @@ public class AssetBundleManagerWindow : EditorWindow {
 			bool contentsVariesWithPlatform = tagGroups.Count == tagGroupsForcePlatform.Count;
 			
 			foreach(var tagComboNoPlatform in BundleTagUtils.TagCombinations(tagGroupsForcePlatform, 1)){
-				string getFileNameTagString = BundleTagUtils.BuildTagString(((BundleTag)platform).Yield().Concat(tagComboNoPlatform));
+				List<BundleTag> getTags = ((BundleTag)platform).Yield().Concat(tagComboNoPlatform).ToList();
+				BundleTagSelection getFileNameTagSelection = new BundleTagSelection(~0, getTags);
 				string getAssetsTagString;
 				if(contentsVariesWithPlatform){
-					getAssetsTagString = getFileNameTagString;
+					getAssetsTagString = BundleTagUtils.BuildTagString(getTags);
 				}
 				else{
 					getAssetsTagString = BundleTagUtils.BuildTagString(tagComboNoPlatform);
 				}
 				AssetBundleBuild[] variantBuild = new AssetBundleBuild[1];
-				variantBuild[0].assetBundleName = detectedBundles[i].FileName(getFileNameTagString);
+				variantBuild[0].assetBundleName = detectedBundles[i].FileName(getFileNameTagSelection);
 				variantBuild[0].assetNames = detectedBundles[i].GetAssetsForTags(getAssetsTagString).Select(x => AssetDatabase.GetAssetPath(x)).ToArray();
 				BuildPipeline.BuildAssetBundles(targetDirPath, variantBuild, BuildAssetBundleOptions.None, platform.unityBuildTarget);
 			}			

@@ -54,13 +54,23 @@ public static class AssetBundleLoader {
 	
 	//Asyncronously fetches an asset from the given listing with the given name.
 	//If fetching several assets it is faster to use GetBundle() and then bundle.LoadAsset().
-	public static Coroutine<T> GetAsset<T>(AssetBundleListing listing, string assetName){
-		return LoaderHelper.StartCoroutine<T>(GetAssetCoroutine(listing, assetName));
+	//Optionally allows the use of a particular tag set instead of the default, currently active set
+	public static Coroutine<T> GetAsset<T>(AssetBundleListing listing, string assetName, BundleTagSelection targetTags = null){
+		//Default to currently active tag set
+		if(targetTags == null){
+			targetTags = AssetBundleRuntimeSettings.ActiveTags;
+		}
+		return LoaderHelper.StartCoroutine<T>(GetAssetCoroutine(listing, assetName, targetTags));
 	}
 	
 	//Asyncronously fetches the asset bundle corresponding to the given listing
-	public static Coroutine<AssetBundle> GetBundle(AssetBundleListing listing){
-		return LoaderHelper.StartCoroutine<AssetBundle>(GetBundleCoroutine(listing));
+	//Optionally allows the use of a particular tag set instead of the default, currently active set
+	public static Coroutine<AssetBundle> GetBundle(AssetBundleListing listing, BundleTagSelection targetTags = null){
+		//Default to currently active tag set
+		if(targetTags == null){
+			targetTags = AssetBundleRuntimeSettings.ActiveTags;
+		}
+		return LoaderHelper.StartCoroutine<AssetBundle>(GetBundleCoroutine(listing, targetTags));
 	}
 	
 	//Releases the asset with the given name, from the given listing.
@@ -73,8 +83,12 @@ public static class AssetBundleLoader {
 	
 	//Releases the AssetBundle corresponding to the given AssetBundleListing.
 	//Note that this does not necessarily unload the AssetBundle from memory.
-	public static void ReleaseBundle(AssetBundleListing listing){		
-		string key = listing.ActiveFileName;
+	//Optionally allows forcing the target tag selection instead of using the default, currently active tag set
+	public static void ReleaseBundle(AssetBundleListing listing, BundleTagSelection targetTags = null){
+		if(targetTags == null){
+			targetTags = AssetBundleRuntimeSettings.ActiveTags;
+		}
+		string key = GetKey(listing, targetTags);
 		if(!bundleCache.ContainsKey(key)){
 			Debug.LogError("No bundle with id " + key);
 			return;
@@ -88,10 +102,18 @@ public static class AssetBundleLoader {
 		}
 	}
 	
+	//Gets the bundle cache key for a given bundle listing and the given tag selection.
+	private static string GetKey(AssetBundleListing listing, BundleTagSelection tags){
+		if((tags.Mask & listing.tagMask) != listing.tagMask){
+			throw new System.ArgumentException("Cannot construct key: Tags selection does not include tags required by listing", "tags");
+		}
+		return listing.FileNamePrefix + AssetBundleChars.BundleSeparator + tags.GetMasked(listing.tagMask).ToString();
+	}
+	
 	//Workhorse function for GetAsset()
-	private static IEnumerator GetAssetCoroutine(AssetBundleListing listing, string assetName){
+	private static IEnumerator GetAssetCoroutine(AssetBundleListing listing, string assetName, BundleTagSelection targetTags){
 		//Get AssetBundle
-		Coroutine<AssetBundle> bundleCoroutine = GetBundle(listing);
+		Coroutine<AssetBundle> bundleCoroutine = GetBundle(listing, targetTags);
 		yield return bundleCoroutine.coroutine;
 		AssetBundle bundle = bundleCoroutine.Value;
 		//Load asset from bundle
@@ -107,15 +129,15 @@ public static class AssetBundleLoader {
 	}
 	
 	//Workhorse function for GetBundle()
-	private static IEnumerator GetBundleCoroutine(AssetBundleListing listing){
+	private static IEnumerator GetBundleCoroutine(AssetBundleListing listing, BundleTagSelection targetTags){
 		//Ensure dependencies are already loaded first
 		foreach(AssetBundleListing dependency in listing.dependencies){
-			yield return GetBundle(dependency).coroutine;
+			yield return GetBundle(dependency, targetTags).coroutine;
 		}
 		//Load AssetBundle if not cached
-		string key = listing.ActiveFileName;
+		string key = GetKey(listing, targetTags);
 		if(!bundleCache.ContainsKey(key)){
-			Debug.Log("Load AssetBundle from " + AssetBundlePath(key));
+			Debug.Log("Load AssetBundle from " + AssetBundlePath(listing.FileName(targetTags)));
 			var www = new WWW(AssetBundlePath(key));
 			yield return www;
 			var wwwBundle = www.assetBundle;

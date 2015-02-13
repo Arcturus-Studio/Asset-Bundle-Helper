@@ -5,33 +5,27 @@ using UnityEditor;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+//Pseudo-typedef
+using TagTable = System.Collections.Generic.Dictionary<string, BundleTag>;
 
 public class AssetBundleRuntimeSettings : ScriptableSingleton<AssetBundleRuntimeSettings> {
 	//Set of currently active tags
-	public static IEnumerable<string> ActiveTags{
+	public static BundleTagSelection ActiveTags{
 		get{
-			return Instance.tagGroups.Select(x => GetActiveTag(x.name));
+			List<BundleTag> tags = Instance.tagGroups.Select(x => GetActiveTagObject(x.name)).ToList(); //inits allTagsMask if necessary
+			var activeTags = new BundleTagSelection(Instance.allTagsMask, tags);
+			return activeTags;
 		}
 	}
 	
-	//Set of currently active tags, filtered by the given bitmask
-	public static IEnumerable<string> MaskedActiveTags(int mask){
-		int i = 0;
-		foreach(string tag in ActiveTags){
-			if((mask & (1 << i)) != 0){
-				yield return tag;
-			}
-			i++;
-		}
-	}
-
-	//Returns the currently active tag name for the given tag group
+	//Returns the currently active tag for the given tag group
 	public static string GetActiveTag(string groupName){
-		if(Instance.activeTags == null){
-			Instance.InitDefaultTags();
-		}
-		string activeTag = null;
-		if(Instance.activeTags.TryGetValue(groupName, out activeTag)){
+		return GetActiveTagObject(groupName).name;
+	}
+	
+	private static BundleTag GetActiveTagObject(string groupName){
+		BundleTag activeTag = null;
+		if(Instance._ActiveTags.TryGetValue(groupName, out activeTag)){
 			return activeTag;
 		}
 		else{
@@ -41,20 +35,28 @@ public class AssetBundleRuntimeSettings : ScriptableSingleton<AssetBundleRuntime
 	
 	//Sets the currently active tag name for the given tag group
 	public static void SetActiveTag(string groupName, string activeTag){
-		if(Instance.activeTags == null){
-			Instance.InitDefaultTags();
+		//Find group with matching name
+		foreach(BundleTagGroup group in Instance.tagGroups){
+			if(group.name == groupName){
+				//Find tag with matching name
+				foreach(BundleTag tag in group.tags){
+					if(tag.name == activeTag){
+						//Assign as active tag
+						Instance._ActiveTags[groupName] = tag;
+						return; //Bail out to avoid throwing
+					}
+				}
+				//No tag with that name
+				throw new System.ArgumentException("no tag '" + activeTag + "' in group " + groupName);
+			}
 		}
-		if(Instance.activeTags.ContainsKey(groupName)){
-			Instance.activeTags[groupName] = activeTag;
-		}
-		else{
-			throw new System.ArgumentException("no tag group '" + groupName + "'", "groupName");
-		}
+		//No group with that name
+		throw new System.ArgumentException("no tag group '" + groupName + "'", "groupName");
 	}
 	
 #if UNITY_EDITOR
 	//Collection of all existing tag groups. Note that due to the way unity serializes data,
-	//these tag groups are seperate instances from the ones in AssetBundleEditorSettings.
+	//these tag groups must be seperate instances from the ones in AssetBundleEditorSettings.
 	//This gets set automatically when tag config in AssetBundleEditorSettings is changed.
 	public static BundleTagGroup[] TagGroups {
 		set{
@@ -67,13 +69,27 @@ public class AssetBundleRuntimeSettings : ScriptableSingleton<AssetBundleRuntime
 	private BundleTagGroup[] tagGroups; //backing field
 	
 	[System.NonSerialized]
-	private Dictionary<string, string> activeTags; //Tag group name -> active tag name
+	private TagTable _activeTags; //Tag group name -> active tag name
 	
-	//Sets all tag groups to have the default tag be the active tag.
+	private int allTagsMask;
+	
+	//Auto-initalizing activeTags accessor
+	private TagTable _ActiveTags{
+		get{
+			if(_activeTags == null){
+				InitDefaultTags();
+			}
+			return _activeTags;
+		}
+	}
+	
+	//Sets all tag groups to have the default tag be the active tag and configures allTagsMask
 	private void InitDefaultTags(){
-		activeTags = new Dictionary<string, string>();
+		allTagsMask = 0;
+		_activeTags = new TagTable();
 		foreach(BundleTagGroup tagGroup in tagGroups){
-			activeTags[tagGroup.name] = tagGroup.tags[0].name;
+			allTagsMask |= (1 << _activeTags.Count);
+			_activeTags[tagGroup.name] = tagGroup.tags[0];
 		}
 	}
 }

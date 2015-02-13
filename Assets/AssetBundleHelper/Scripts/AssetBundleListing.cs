@@ -49,18 +49,16 @@ public class AssetBundleListing : ScriptableObject {
 		AssetBundleLoader.ReleaseAsset(this, assetName);
 	}
 	
-	//File name for the asset bundle for this listing based on the currently active tag set
-	public string ActiveFileName {
-		get {
-			return FileName(
-				BundleTagUtils.BuildTagString(AssetBundleRuntimeSettings.MaskedActiveTags(TagMaskIncludingPlatform))
-			);
+	//File name for the asset bundle for this listing corresponding to the passed tag set.
+	//The tag selection must include tags for all groups the listing varies on, plus the platform group.
+	public string FileName(BundleTagSelection tags){
+		//Check selection for missing tags
+		if((tags.Mask & TagMaskIncludingPlatform) != TagMaskIncludingPlatform){
+			throw new System.ArgumentException("Tag selection does not include tags needed to construct filename for this listing", "tags");
 		}
-	}
-	
-	//File name for the asset bundle for this listing corresponding to the passed tag set string.
-	public string FileName(string tagString){
-		return FileNamePrefix + AssetBundleChars.BundleSeparator + tagString.ToLower();
+		tags = tags.GetMasked(TagMaskIncludingPlatform);
+		string tagString = tags.ToString().ToLower();
+		return FileNamePrefix + AssetBundleChars.BundleSeparator + tagString;
 	}
 	
 	//Unique file prefix for this listing
